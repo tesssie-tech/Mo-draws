@@ -34,7 +34,7 @@ const DashboardPage = ({ user, onLogout }) => {
   ];
 
   return (
-    <div style={{ backgroundColor: 'black', color: 'white', minHeight: '100vh', display: 'flex' }}>
+    <div style={{ backgroundColor: 'black', color: 'white', height: '100vh', display: 'flex', overflow: 'hidden' }}>
       {/* Sidebar */}
       <aside style={{
         width: sidebarOpen ? '250px' : '0px',
@@ -66,7 +66,7 @@ const DashboardPage = ({ user, onLogout }) => {
 
             {/* Menu Items */}
             <h3 style={{ color: '#FF006B', marginTop: 0, marginBottom: '20px', fontSize: '1.1em' }}>Menu</h3>
-            <nav style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: 'auto' }}>
+            <nav style={{ display: 'flex', flexDirection: 'column', gap: '10px', overflowY: 'auto', paddingRight: '8px' }}>
               {navItems.map((item) => (
                 <button
                   key={item.id}
