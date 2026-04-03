@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
 
 const HeaderDropdown = ({ title, items }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -124,7 +123,7 @@ const CustomVideoPlayer = ({ src }) => {
   );
 };
 
-const LandingPage = () => {
+const LandingPage = ({ onLoginClick, onSignUpClick }) => {
   const [isHeroHovered, setIsHeroHovered] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -178,24 +177,22 @@ const LandingPage = () => {
             />
         </nav>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
-          <Link to="/login">
-            <button 
-              style={{ margin: '0 10px', padding: '10px 20px', backgroundColor: 'transparent', color: 'white', border: '1px solid #45FFFF', borderRadius: '25px', cursor: 'pointer', transition: 'all 0.2s ease' }}
-              onMouseEnter={(e) => { e.target.style.backgroundColor = '#45FFFF'; e.target.style.color = 'black'; }}
-              onMouseLeave={(e) => { e.target.style.backgroundColor = 'transparent'; e.target.style.color = 'white'; }}
-            >
-              Login
-            </button>
-          </Link>
-          <Link to="/signup">
-            <button 
-              style={{ margin: '0 10px', padding: '10px 20px', backgroundColor: 'transparent', color: 'white', border: '1px solid #45FFFF', borderRadius: '25px', cursor: 'pointer', transition: 'all 0.2s ease' }}
-              onMouseEnter={(e) => { e.target.style.backgroundColor = '#45FFFF'; e.target.style.color = 'black'; }}
-              onMouseLeave={(e) => { e.target.style.backgroundColor = 'transparent'; e.target.style.color = 'white'; }}
-            >
-              Sign Up
-            </button>
-          </Link>
+          <button 
+            onClick={onLoginClick}
+            style={{ margin: '0 10px', padding: '10px 20px', backgroundColor: 'transparent', color: 'white', border: '1px solid #45FFFF', borderRadius: '25px', cursor: 'pointer', transition: 'all 0.2s ease' }}
+            onMouseEnter={(e) => { e.target.style.backgroundColor = '#45FFFF'; e.target.style.color = 'black'; }}
+            onMouseLeave={(e) => { e.target.style.backgroundColor = 'transparent'; e.target.style.color = 'white'; }}
+          >
+            Login
+          </button>
+          <button 
+            onClick={onSignUpClick}
+            style={{ margin: '0 10px', padding: '10px 20px', backgroundColor: 'transparent', color: 'white', border: '1px solid #45FFFF', borderRadius: '25px', cursor: 'pointer', transition: 'all 0.2s ease' }}
+            onMouseEnter={(e) => { e.target.style.backgroundColor = '#45FFFF'; e.target.style.color = 'black'; }}
+            onMouseLeave={(e) => { e.target.style.backgroundColor = 'transparent'; e.target.style.color = 'white'; }}
+          >
+            Sign Up
+          </button>
         </div>
       </header>
 
@@ -204,18 +201,17 @@ const LandingPage = () => {
         <h1>Welcome to Mo-Draws</h1>
         <p>Your ultimate platform for storing and showcasing digital illustrations.</p>
         <p>Upload, organize, and share your artwork with ease.</p>
-        <Link to="/signup">
-          <button 
-            style={{ margin: '10px 0', padding: '15px 30px', fontSize: '1.2em', border: '1px solid #45FFFF', backgroundColor: isHeroHovered ? '#45FFFF' : 'transparent', color: isHeroHovered ? 'black' : 'white', borderRadius: '25px', cursor: 'pointer', transition: 'all 0.2s ease', display: 'inline-flex', alignItems: 'center' }}
-            onMouseEnter={() => setIsHeroHovered(true)}
-            onMouseLeave={() => setIsHeroHovered(false)}
-          >
-            Get Started
-            <span style={{ display: 'inline-block', transition: 'transform 0.2s ease', transform: isHeroHovered ? 'translateX(5px)' : 'translateX(0)', marginLeft: '6px' }}>
-              →
-            </span>
-          </button>
-        </Link>
+        <button 
+          onClick={onSignUpClick}
+          style={{ margin: '10px 0', padding: '15px 30px', fontSize: '1.2em', border: '1px solid #45FFFF', backgroundColor: isHeroHovered ? '#45FFFF' : 'transparent', color: isHeroHovered ? 'black' : 'white', borderRadius: '25px', cursor: 'pointer', transition: 'all 0.2s ease', display: 'inline-flex', alignItems: 'center' }}
+          onMouseEnter={() => setIsHeroHovered(true)}
+          onMouseLeave={() => setIsHeroHovered(false)}
+        >
+          Get Started
+          <span style={{ display: 'inline-block', transition: 'transform 0.2s ease', transform: isHeroHovered ? 'translateX(5px)' : 'translateX(0)', marginLeft: '6px' }}>
+            →
+          </span>
+        </button>
       </section>
 
       {/* About the Creator Section */}

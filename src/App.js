@@ -1,45 +1,48 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { useState } from 'react';
 import LandingPage from './LandingPage';
-import LoginPage from './LoginPage';
-import SignUpPage from './SignUpPage';
+import AuthModal from './AuthModal';
 import './App.css';
 
 function App() {
+  const [authModal, setAuthModal] = useState({ isOpen: false, mode: 'login' });
+
+  const openAuthModal = (mode) => {
+    setAuthModal({ isOpen: true, mode });
+  };
+
+  const closeAuthModal = () => {
+    setAuthModal({ isOpen: false, mode: 'login' });
+  };
+
   return (
-    <Router>
-      <div className="App">
-        <style>
-          {`
-            @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Varela+Round&display=swap');
-            
-            body, input, p, a, div {
-              font-family: 'Varela Round', sans-serif;
-            }
+    <div className="App">
+      <style>
+        {`
+          @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Varela+Round&display=swap');
+          
+          body, input, p, a, div {
+            font-family: 'Varela Round', sans-serif;
+          }
 
-            p {
-              color: #45FFFF;
-            }
+          p {
+            color: #45FFFF;
+          }
 
-            button {
-              font-family: 'Varela Round', sans-serif;
-              font-weight: bold;
-              letter-spacing: 1px;
-            }
+          button {
+            font-family: 'Varela Round', sans-serif;
+            font-weight: bold;
+            letter-spacing: 1px;
+          }
 
-            h1, h2, h3 {
-              font-family: 'Fredoka', sans-serif;
-              color: #FF006B;
-            }
-          `}
-        </style>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignUpPage />} />
-        </Routes>
-      </div>
-    </Router>
+          h1, h2, h3 {
+            font-family: 'Fredoka', sans-serif;
+            color: #FF006B;
+          }
+        `}
+      </style>
+      <LandingPage onLoginClick={() => openAuthModal('login')} onSignUpClick={() => openAuthModal('signup')} />
+      <AuthModal isOpen={authModal.isOpen} onClose={closeAuthModal} mode={authModal.mode} />
+    </div>
   );
 }
 
