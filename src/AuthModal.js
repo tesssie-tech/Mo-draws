@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import VerificationModal from './VerificationModal';
 
-const AuthModal = ({ isOpen, onClose, mode }) => {
+const AuthModal = ({ isOpen, onClose, mode, onAuthSuccess }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showVerification, setShowVerification] = useState(false);
   const [signupEmail, setSignupEmail] = useState('');
+  const [signupName, setSignupName] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -19,12 +20,13 @@ const AuthModal = ({ isOpen, onClose, mode }) => {
     if (mode === 'signup') {
       // Show verification modal for signup
       setSignupEmail(email);
+      setSignupName(name);
       setShowVerification(true);
       console.log('Signup initiated:', { name, email, password });
     } else {
       // Login
       console.log('Login:', email, password);
-      onClose();
+      onAuthSuccess({ name: email.split('@')[0], email });
     }
   };
 
@@ -33,7 +35,7 @@ const AuthModal = ({ isOpen, onClose, mode }) => {
     alert('Account verified successfully! Welcome to Mo-Draws!');
     resetForm();
     setShowVerification(false);
-    onClose();
+    onAuthSuccess({ name: signupName, email: signupEmail });
   };
 
   const resetForm = () => {
@@ -42,6 +44,7 @@ const AuthModal = ({ isOpen, onClose, mode }) => {
     setPassword('');
     setConfirmPassword('');
     setSignupEmail('');
+    setSignupName('');
   };
 
   if (!isOpen) return null;

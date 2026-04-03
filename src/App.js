@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import LandingPage from './LandingPage';
+import DashboardPage from './DashboardPage';
 import AuthModal from './AuthModal';
 import './App.css';
 
 function App() {
   const [authModal, setAuthModal] = useState({ isOpen: false, mode: 'login' });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
 
   const openAuthModal = (mode) => {
     setAuthModal({ isOpen: true, mode });
@@ -12,6 +15,17 @@ function App() {
 
   const closeAuthModal = () => {
     setAuthModal({ isOpen: false, mode: 'login' });
+  };
+
+  const handleAuthSuccess = (userData) => {
+    setUser(userData);
+    setIsAuthenticated(true);
+    closeAuthModal();
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setIsAuthenticated(false);
   };
 
   return (
@@ -40,8 +54,14 @@ function App() {
           }
         `}
       </style>
-      <LandingPage onLoginClick={() => openAuthModal('login')} onSignUpClick={() => openAuthModal('signup')} />
-      <AuthModal isOpen={authModal.isOpen} onClose={closeAuthModal} mode={authModal.mode} />
+      {isAuthenticated && user ? (
+        <DashboardPage user={user} onLogout={handleLogout} />
+      ) : (
+        <>
+          <LandingPage onLoginClick={() => openAuthModal('login')} onSignUpClick={() => openAuthModal('signup')} />
+          <AuthModal isOpen={authModal.isOpen} onClose={closeAuthModal} mode={authModal.mode} onAuthSuccess={handleAuthSuccess} />
+        </>
+      )}
     </div>
   );
 }

@@ -1,0 +1,216 @@
+import React, { useState } from 'react';
+
+const DashboardPage = ({ user, onLogout }) => {
+  const [uploadedArtworks, setUploadedArtworks] = useState([
+    {
+      id: 1,
+      title: 'Digital Illustration 1',
+      thumbnail: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?auto=format&fit=crop&w=300&q=80',
+      date: 'Mar 20, 2026'
+    },
+    {
+      id: 2,
+      title: 'Character Design',
+      thumbnail: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?auto=format&fit=crop&w=300&q=80',
+      date: 'Mar 18, 2026'
+    }
+  ]);
+
+  const handleLogout = () => {
+    if (window.confirm('Are you sure you want to logout?')) {
+      onLogout();
+    }
+  };
+
+  return (
+    <div style={{ backgroundColor: 'black', color: 'white', minHeight: '100vh' }}>
+      {/* Header */}
+      <header style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        padding: '20px 50px',
+        backgroundColor: '#111',
+        borderBottom: '1px solid #857AFF'
+      }}>
+        <div>
+          <h1 style={{ fontSize: '2.5em', margin: '0' }}>
+            <span style={{ color: '#FF006B' }}>Mo</span>
+            <span style={{ color: '#857AFF' }}>Draws</span>
+          </h1>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '30px' }}>
+          <span style={{ color: '#45FFEF', fontSize: '1.1em' }}>
+            Welcome, <strong>{user.name}</strong>
+          </span>
+          <button
+            onClick={handleLogout}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: 'transparent',
+              color: 'white',
+              border: '1px solid #FF006B',
+              borderRadius: '25px',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              fontSize: '14px',
+              fontWeight: 'bold'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#FF006B';
+              e.target.style.color = 'black';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'transparent';
+              e.target.style.color = 'white';
+            }}
+          >
+            Logout
+          </button>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '50px 20px' }}>
+        {/* Dashboard Title */}
+        <div style={{ marginBottom: '50px' }}>
+          <h2 style={{ fontSize: '2.5em', marginBottom: '10px' }}>My Gallery</h2>
+          <p style={{ color: '#45FFEF', fontSize: '1.1em' }}>Manage and showcase your digital illustrations</p>
+        </div>
+
+        {/* Upload Section */}
+        <div style={{
+          backgroundColor: '#1a1a1a',
+          border: '2px dashed #857AFF',
+          borderRadius: '15px',
+          padding: '40px',
+          textAlign: 'center',
+          marginBottom: '50px',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = '#45FFEF';
+          e.currentTarget.style.backgroundColor = '#222';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = '#857AFF';
+          e.currentTarget.style.backgroundColor = '#1a1a1a';
+        }}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#857AFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 15px', display: 'block' }}>
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          <h3 style={{ color: '#FF006B', marginTop: 0 }}>Upload Your Artwork</h3>
+          <p style={{ color: '#ccc', margin: '10px 0' }}>Drag and drop your image here, or click to select</p>
+          <p style={{ color: '#857AFF', fontSize: '12px' }}>Supported formats: PNG, JPG, JPEG, GIF</p>
+        </div>
+
+        {/* Stats Section */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '20px',
+          marginBottom: '50px'
+        }}>
+          <div style={{
+            backgroundColor: '#1a1a1a',
+            border: '1px solid #857AFF',
+            borderRadius: '10px',
+            padding: '20px',
+            textAlign: 'center'
+          }}>
+            <h3 style={{ color: '#FF006B', margin: '0 0 10px 0', fontSize: '2em' }}>{uploadedArtworks.length}</h3>
+            <p style={{ color: '#45FFEF', margin: 0 }}>Artworks Uploaded</p>
+          </div>
+          <div style={{
+            backgroundColor: '#1a1a1a',
+            border: '1px solid #857AFF',
+            borderRadius: '10px',
+            padding: '20px',
+            textAlign: 'center'
+          }}>
+            <h3 style={{ color: '#FF006B', margin: '0 0 10px 0', fontSize: '2em' }}>1.2K</h3>
+            <p style={{ color: '#45FFEF', margin: 0 }}>Total Views</p>
+          </div>
+          <div style={{
+            backgroundColor: '#1a1a1a',
+            border: '1px solid #857AFF',
+            borderRadius: '10px',
+            padding: '20px',
+            textAlign: 'center'
+          }}>
+            <h3 style={{ color: '#FF006B', margin: '0 0 10px 0', fontSize: '2em' }}>48</h3>
+            <p style={{ color: '#45FFEF', margin: 0 }}>Followers</p>
+          </div>
+        </div>
+
+        {/* Gallery Section */}
+        <div>
+          <h3 style={{ color: '#FF006B', marginBottom: '20px' }}>Recent Uploads</h3>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+            gap: '20px'
+          }}>
+            {uploadedArtworks.map((artwork) => (
+              <div 
+                key={artwork.id}
+                style={{
+                  backgroundColor: '#1a1a1a',
+                  border: '1px solid #857AFF',
+                  borderRadius: '10px',
+                  overflow: 'hidden',
+                  transition: 'all 0.3s ease',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = '#45FFEF';
+                  e.currentTarget.style.transform = 'translateY(-5px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#857AFF';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                <img 
+                  src={artwork.thumbnail} 
+                  alt={artwork.title}
+                  style={{
+                    width: '100%',
+                    height: '200px',
+                    objectFit: 'cover',
+                    display: 'block'
+                  }}
+                />
+                <div style={{ padding: '15px' }}>
+                  <h4 style={{ color: '#FF006B', margin: '0 0 8px 0' }}>{artwork.title}</h4>
+                  <p style={{ color: '#857AFF', margin: '0', fontSize: '12px' }}>{artwork.date}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer style={{
+        textAlign: 'center',
+        padding: '30px',
+        borderTop: '1px solid #857AFF',
+        marginTop: '50px',
+        color: '#ccc'
+      }}>
+        <p style={{ margin: '10px 0' }}>© 2026 Mo-Draws. All rights reserved.</p>
+        <p style={{ margin: '10px 0', fontSize: '12px' }}>
+          <span style={{ color: '#857AFF', cursor: 'pointer', marginRight: '15px' }}>Terms</span>
+          <span style={{ color: '#857AFF', cursor: 'pointer', marginRight: '15px' }}>Privacy</span>
+          <span style={{ color: '#857AFF', cursor: 'pointer' }}>Contact</span>
+        </p>
+      </footer>
+    </div>
+  );
+};
+
+export default DashboardPage;
