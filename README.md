@@ -1,53 +1,166 @@
-# Getting Started with Create React App
+# Mo-Draws 🎨
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A modern web platform for storing and showcasing digital illustrations. Mo-Draws provides artists with a sleek, user-friendly interface to upload, manage, and display their digital artwork.
 
-## Available Scripts
+## 📋 Table of Contents
+- [About](#about)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Installation](#installation)
+- [Getting Started](#getting-started)
+- [Project Structure](#project-structure)
+- [Available Scripts](#available-scripts)
+- [Design](#design)
 
-In the project directory, you can run:
+## 🎯 About
 
-### `npm start`
+Mo-Draws is a digital illustration platform designed for artists to share their creative work. The application provides a modern, intuitive interface with authentication capabilities, allowing artists to create accounts, manage their portfolios, and showcase their illustrations to the community.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## ✨ Features
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- **Landing Page**: Welcoming hero section with FAQ section
+- **User Authentication**: Sign up and login pages for secure user accounts
+- **Modern UI Design**: Dark-themed interface with vibrant neon accent colors
+- **Responsive Navigation**: Interactive header with dropdown menus
+- **Artist Showcase**: Dedicated space for displaying digital illustrations
 
-### `npm test`
+## 🛠️ Tech Stack
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Frontend
+- **React** (v19.2.4) - JavaScript library for building user interfaces
+- **React Router DOM** (v7.13.2) - Client-side routing for seamless navigation
+- **React Scripts** (v5.0.1) - Build and development tooling
 
-### `npm run build`
+### Styling
+- **CSS3** - Custom stylesheets with modern color schemes
+- **Google Fonts** - Fredoka and Varela Round typefaces
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Testing & Quality
+- **React Testing Library** - Component testing framework
+- **Jest** - JavaScript testing framework
+- **ESLint** - Code linting and quality checks
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Deployment
+- **GitHub Pages** - Static site hosting (gh-pages)
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## 📦 Installation
 
-### `npm run eject`
+### Prerequisites
+- Node.js (v14.0 or higher)
+- npm or yarn package manager
+- Git
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### Setup
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/tesssie-tech/Mo-draws.git
+   cd mo-draws
+   ```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+3. **Start the development server**
+   ```bash
+   npm start
+   ```
 
-## Learn More
+The app will automatically open in your browser at `http://localhost:3000`
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## 🚀 Getting Started
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### Running the Application
+```bash
+npm start
+```
 
-### Code Splitting
+### Building for Production
+```bash
+npm run build
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### Running Tests
+```bash
+npm test
+```
+
+### Deploying to GitHub Pages
+```bash
+npm run deploy
+```
+
+## 📁 Project Structure
+
+```
+mo-draws/
+├── public/
+│   ├── index.html           # Main HTML file
+│   ├── manifest.json        # Web app manifest
+│   ├── robots.txt           # SEO robots configuration
+│   └── img/                 # Static images
+├── src/
+│   ├── App.js               # Main application component
+│   ├── App.css              # Main app styles
+│   ├── LandingPage.js       # Landing page with hero section and FAQ
+│   ├── LoginPage.js         # User login interface
+│   ├── SignUpPage.js        # User registration interface
+│   ├── index.js             # React entry point
+│   ├── index.css            # Global styles
+│   └── img/                 # Local image assets
+├── build/                   # Production build output
+├── package.json             # Project dependencies and scripts
+└── README.md                # This file
+```
+
+## 🎨 Design
+
+### Color Scheme
+- **Primary Background**: Pure Black (#000000)
+- **Primary Accent**: Hot Pink (#FF006B)
+- **Secondary Accent**: Purple (#857AFF)
+- **Highlight Color**: Cyan (#45FFEF)
+- **Border Color**: Cyan (#45FFFF)
+
+### Typography
+- **Headings**: Fredoka (bold, 600 weight)
+- **Body Text**: Varela Round (regular, 500 weight)
+- **Letter Spacing**: Optimized for readability
+
+### UI Features
+- Dark theme for reduced eye strain
+- Interactive dropdown navigation menus
+- Expandable FAQ items
+- Responsive button styling
+- Smooth hover transitions
+
+## 📋 Available Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm start` | Runs development server on port 3000 |
+| `npm build` | Creates optimized production build |
+| `npm test` | Launches test runner in interactive mode |
+| `npm eject` | Exposes webpack configuration (irreversible) |
+| `npm run deploy` | Deploys to GitHub Pages |
+
+## 🌐 Live Demo
+
+View the live application: [Mo-Draws GitHub Pages](https://tesssie-tech.github.io/Mo-draws/)
+
+## 📝 License
+
+This project is private and owned by tesssie-tech.
+
+## 🤝 Support
+
+For issues, questions, or suggestions, please open an issue on the [GitHub repository](https://github.com/tesssie-tech/Mo-draws/issues).
+
+---
+
+**Created with ❤️ for artists**
 
 ### Analyzing the Bundle Size
 
