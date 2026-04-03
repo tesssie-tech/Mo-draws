@@ -47,12 +47,26 @@ const DashboardPage = ({ user, onLogout }) => {
         position: 'fixed',
         left: 0,
         top: 0,
-        zIndex: 100
+        zIndex: 100,
+        display: 'flex',
+        flexDirection: 'column'
       }}>
         {sidebarOpen && (
           <>
-            <h3 style={{ color: '#FF006B', marginTop: 0, marginBottom: '30px', fontSize: '1.3em' }}>Menu</h3>
-            <nav style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {/* Logo Section */}
+            <div style={{ marginBottom: '40px' }}>
+              <h1 style={{ fontSize: '1.8em', margin: '0 0 10px 0' }}>
+                <span style={{ color: '#FF006B' }}>Mo</span>
+                <span style={{ color: '#857AFF' }}>Draws</span>
+              </h1>
+              <p style={{ color: '#45FFEF', margin: '0', fontSize: '0.9em' }}>
+                Welcome, <strong>{user.name}</strong>
+              </p>
+            </div>
+
+            {/* Menu Items */}
+            <h3 style={{ color: '#FF006B', marginTop: 0, marginBottom: '20px', fontSize: '1.1em' }}>Menu</h3>
+            <nav style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: 'auto' }}>
               {navItems.map((item) => (
                 <button
                   key={item.id}
@@ -91,6 +105,34 @@ const DashboardPage = ({ user, onLogout }) => {
                 </button>
               ))}
             </nav>
+
+            {/* Logout Button */}
+            <button
+              onClick={handleLogout}
+              style={{
+                padding: '12px 15px',
+                backgroundColor: 'transparent',
+                color: 'white',
+                border: '1px solid #FF006B',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                width: '100%',
+                marginTop: '20px'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#FF006B';
+                e.target.style.color = 'black';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = 'transparent';
+                e.target.style.color = 'white';
+              }}
+            >
+              Logout
+            </button>
           </>
         )}
       </aside>
@@ -106,7 +148,7 @@ const DashboardPage = ({ user, onLogout }) => {
         {/* Header */}
         <header style={{ 
           display: 'flex', 
-          justifyContent: 'space-between', 
+          justifyContent: 'center', 
           alignItems: 'center', 
           padding: '20px 40px',
           backgroundColor: '#111',
@@ -140,43 +182,6 @@ const DashboardPage = ({ user, onLogout }) => {
           >
             {sidebarOpen ? '←' : '→'}
           </button>
-
-          <div>
-            <h1 style={{ fontSize: '2.5em', margin: '0' }}>
-              <span style={{ color: '#FF006B' }}>Mo</span>
-              <span style={{ color: '#857AFF' }}>Draws</span>
-            </h1>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '30px' }}>
-            <span style={{ color: '#45FFEF', fontSize: '1.1em' }}>
-              Welcome, <strong>{user.name}</strong>
-            </span>
-            <button
-              onClick={handleLogout}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: 'transparent',
-                color: 'white',
-                border: '1px solid #FF006B',
-                borderRadius: '25px',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                fontSize: '14px',
-                fontWeight: 'bold'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = '#FF006B';
-                e.target.style.color = 'black';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = 'transparent';
-                e.target.style.color = 'white';
-              }}
-            >
-              Logout
-            </button>
-          </div>
         </header>
 
         {/* Page Content */}
