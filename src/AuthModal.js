@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
+import VerificationModal from './VerificationModal';
 
 const AuthModal = ({ isOpen, onClose, mode }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showVerification, setShowVerification] = useState(false);
+  const [signupEmail, setSignupEmail] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -12,8 +15,33 @@ const AuthModal = ({ isOpen, onClose, mode }) => {
       alert('Passwords do not match');
       return;
     }
-    console.log(mode === 'login' ? 'Login:' : 'Sign Up:', { name, email, password });
+
+    if (mode === 'signup') {
+      // Show verification modal for signup
+      setSignupEmail(email);
+      setShowVerification(true);
+      console.log('Signup initiated:', { name, email, password });
+    } else {
+      // Login
+      console.log('Login:', email, password);
+      onClose();
+    }
+  };
+
+  const handleVerification = (code) => {
+    console.log('Verification code submitted:', code);
+    alert('Account verified successfully! Welcome to Mo-Draws!');
+    resetForm();
+    setShowVerification(false);
     onClose();
+  };
+
+  const resetForm = () => {
+    setName('');
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setSignupEmail('');
   };
 
   if (!isOpen) return null;
@@ -177,6 +205,12 @@ const AuthModal = ({ isOpen, onClose, mode }) => {
           </button>
         </form>
       </div>
+      <VerificationModal 
+        isOpen={showVerification} 
+        onClose={() => setShowVerification(false)} 
+        email={signupEmail} 
+        onVerify={handleVerification} 
+      />
     </div>
   );
 };
