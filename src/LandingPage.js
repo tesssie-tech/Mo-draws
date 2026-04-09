@@ -16,14 +16,21 @@ const HeaderDropdown = ({ title, items }) => {
         </svg>
       </span>
       {isOpen && (
-        <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', backgroundColor: '#111', padding: '10px', borderRadius: '5px', minWidth: '150px', zIndex: 10, border: '1px solid #857AFF' }}>
+        <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', backgroundColor: '#1a1a1a', padding: '8px 0', borderRadius: '8px', minWidth: '160px', zIndex: 100, border: '1px solid #857AFF', boxShadow: '0 10px 25px rgba(0,0,0,0.5)', marginTop: '10px' }}>
+          <div style={{ position: 'absolute', top: '-10px', left: 0, width: '100%', height: '10px' }} />
           {items.map((item, index) => (
             <a 
               key={index} 
               href={item.link} 
-              style={{ display: 'block', color: '#ccc', textDecoration: 'none', padding: '8px 10px', fontSize: '0.9em', textAlign: 'center', transition: 'color 0.2s' }}
-              onMouseEnter={(e) => e.target.style.color = 'white'}
-              onMouseLeave={(e) => e.target.style.color = '#ccc'}
+              style={{ display: 'block', color: 'white', textDecoration: 'none', padding: '10px 20px', fontSize: '0.9em', textAlign: 'center', transition: 'all 0.2s ease', borderBottom: index < items.length - 1 ? '1px solid #222' : 'none' }}
+              onMouseEnter={(e) => { e.target.style.color = '#FF006B'; e.target.style.backgroundColor = '#2a2a2a'; }}
+              onMouseLeave={(e) => { e.target.style.color = 'white'; e.target.style.backgroundColor = 'transparent'; }}
+              onClick={(e) => {
+                if (item.onClick) {
+                  e.preventDefault();
+                  item.onClick();
+                }
+              }}
             >
               {item.label}
             </a>
@@ -55,16 +62,34 @@ const FAQItem = ({ question, answer }) => {
   );
 };
 
-const FooterLink = ({ href, children }) => (
-  <a 
-    href={href} 
-    style={{ color: '#ccc', textDecoration: 'none', transition: 'color 0.2s' }} 
-    onMouseEnter={(e) => e.target.style.color = '#45FFEF'} 
-    onMouseLeave={(e) => e.target.style.color = '#ccc'}
-  >
-    {children}
-  </a>
-);
+const FooterLink = ({ href, children }) => {
+  const handleClick = (e) => {
+    if (href.startsWith('#') && href !== '#') {
+      e.preventDefault();
+      const element = document.querySelector(href);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else if (href.startsWith('/')) {
+      // Prevent full page reload and trigger SPA routing for local pages
+      e.preventDefault();
+      window.history.pushState(null, '', href);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }
+  };
+
+  return (
+    <a 
+      href={href} 
+      onClick={handleClick}
+      style={{ color: '#ccc', textDecoration: 'none', transition: 'color 0.2s' }} 
+      onMouseEnter={(e) => e.target.style.color = '#45FFEF'} 
+      onMouseLeave={(e) => e.target.style.color = '#ccc'}
+    >
+      {children}
+    </a>
+  );
+};
 
 const CustomVideoPlayer = ({ src }) => {
   const videoRef = useRef(null);
@@ -127,6 +152,38 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
   const [isHeroHovered, setIsHeroHovered] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
 
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const [toastMessage, setToastMessage] = useState(null);
+  const [isToastClosing, setIsToastClosing] = useState(false);
+  const toastTimeoutRef = useRef(null);
+  const toastCloseTimeoutRef = useRef(null);
+
+  const closeToast = () => {
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    if (toastCloseTimeoutRef.current) clearTimeout(toastCloseTimeoutRef.current);
+    setIsToastClosing(true);
+    toastCloseTimeoutRef.current = setTimeout(() => {
+      setToastMessage(null);
+      setIsToastClosing(false);
+    }, 300);
+  };
+
+  const showToast = (message) => {
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    if (toastCloseTimeoutRef.current) clearTimeout(toastCloseTimeoutRef.current);
+    setToastMessage(message);
+    setIsToastClosing(false);
+    toastTimeoutRef.current = setTimeout(closeToast, 3000);
+  };
+
   const sliderImages = [
     'https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&w=400&q=80',
     'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&w=400&q=80',
@@ -142,65 +199,141 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
 
   return (
     <div style={{ backgroundColor: 'black', color: 'white', minHeight: '100vh' }}>
+      <style>
+        {`
+          @keyframes toastSlideIn {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
+          }
+          @keyframes toastSlideOut {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(50px); }
+          }
+          @keyframes menuFadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+        `}
+      </style>
       {/* Header with Logo */}
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', backgroundColor: 'black' }}>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: isMobile ? '15px 20px' : '20px', backgroundColor: 'black', position: 'relative' }}>
         <div style={{ flex: 1 }}>
-          <h1 style={{ fontSize: '2.5em', margin: '0' }}>
+          <h1 style={{ fontSize: isMobile ? '2em' : '2.5em', margin: '0' }}>
             <span style={{ color: '#FF006B' }}>Mo</span>
             <span style={{ color: '#857AFF' }}>Draws</span>
           </h1>
         </div>
-        <nav style={{ flex: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
-            <HeaderDropdown 
-              title="Shop" 
-              items={[
-                { label: 'Etsy Store', link: '#' },
-                { label: 'Redbubble', link: '#' },
-                { label: 'Gumroad', link: '#' }
-              ]} 
-            />
-            <a 
-              href="#faq" 
-              style={{ color: 'white', textDecoration: 'none', margin: '0 15px', fontWeight: 'bold', transition: 'color 0.2s' }}
-              onMouseEnter={(e) => e.target.style.color = '#45FFEF'}
-              onMouseLeave={(e) => e.target.style.color = 'white'}
+        
+        {isMobile ? (
+          <div>
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              style={{ backgroundColor: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              Frequently Asked
-            </a>
-            <HeaderDropdown 
-              title="Contact Us" 
-              items={[
-                { label: 'Twitter', link: '#' },
-                { label: 'Instagram', link: '#' },
-                { label: 'Discord', link: '#' }
-              ]} 
-            />
-        </nav>
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
-          <button 
-            onClick={onLoginClick}
-            style={{ margin: '0 10px', padding: '10px 20px', backgroundColor: 'transparent', color: 'white', border: '1px solid #45FFFF', borderRadius: '25px', cursor: 'pointer', transition: 'all 0.2s ease' }}
-            onMouseEnter={(e) => { e.target.style.backgroundColor = '#45FFFF'; e.target.style.color = 'black'; }}
-            onMouseLeave={(e) => { e.target.style.backgroundColor = 'transparent'; e.target.style.color = 'white'; }}
-          >
-            Login
-          </button>
-          <button 
-            onClick={onSignUpClick}
-            style={{ margin: '0 10px', padding: '10px 20px', backgroundColor: 'transparent', color: 'white', border: '1px solid #45FFFF', borderRadius: '25px', cursor: 'pointer', transition: 'all 0.2s ease' }}
-            onMouseEnter={(e) => { e.target.style.backgroundColor = '#45FFFF'; e.target.style.color = 'black'; }}
-            onMouseLeave={(e) => { e.target.style.backgroundColor = 'transparent'; e.target.style.color = 'white'; }}
-          >
-            Sign Up
-          </button>
-        </div>
+              {mobileMenuOpen ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FF006B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#45FFEF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+              )}
+            </button>
+            {mobileMenuOpen && (
+              <div style={{ position: 'absolute', top: '100%', left: 0, width: '100%', backgroundColor: '#1a1a1a', borderBottom: '1px solid #857AFF', display: 'flex', flexDirection: 'column', padding: '20px', boxSizing: 'border-box', zIndex: 1000, boxShadow: '0 10px 20px rgba(0,0,0,0.5)', animation: 'menuFadeIn 0.2s ease-out forwards' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
+                  <HeaderDropdown 
+                    title="Shop" 
+                    items={[
+                      { label: 'Etsy Store', link: '#', onClick: () => { showToast('Opening Etsy Store...'); setMobileMenuOpen(false); } },
+                      { label: 'Redbubble', link: '#', onClick: () => { showToast('Opening Redbubble...'); setMobileMenuOpen(false); } },
+                      { label: 'Gumroad', link: '#', onClick: () => { showToast('Opening Gumroad...'); setMobileMenuOpen(false); } }
+                    ]} 
+                  />
+                  <a 
+                    href="#faq" 
+                    onClick={() => setMobileMenuOpen(false)}
+                    style={{ color: 'white', textDecoration: 'none', fontWeight: 'bold' }}
+                  >
+                    Frequently Asked
+                  </a>
+                  <HeaderDropdown 
+                    title="Contact Us" 
+                    items={[
+                      { label: 'Twitter', link: '#', onClick: () => { showToast('Opening Twitter...'); setMobileMenuOpen(false); } },
+                      { label: 'Instagram', link: '#', onClick: () => { showToast('Opening Instagram...'); setMobileMenuOpen(false); } },
+                      { label: 'Discord', link: '#', onClick: () => { showToast('Joining Discord server...'); setMobileMenuOpen(false); } }
+                    ]} 
+                  />
+                  <div style={{ width: '100%', height: '1px', backgroundColor: '#333', margin: '5px 0' }} />
+                  <button 
+                    onClick={() => { onLoginClick(); setMobileMenuOpen(false); }}
+                    style={{ width: '100%', padding: '12px', backgroundColor: 'transparent', color: 'white', border: '1px solid #45FFFF', borderRadius: '25px', cursor: 'pointer', fontWeight: 'bold' }}
+                  >
+                    Login
+                  </button>
+                  <button 
+                    onClick={() => { onSignUpClick(); setMobileMenuOpen(false); }}
+                    style={{ width: '100%', padding: '12px', backgroundColor: '#45FFFF', color: 'black', border: 'none', borderRadius: '25px', cursor: 'pointer', fontWeight: 'bold' }}
+                  >
+                    Sign Up
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            <nav style={{ flex: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
+                <HeaderDropdown 
+                  title="Shop" 
+                  items={[
+                    { label: 'Etsy Store', link: '#', onClick: () => showToast('Opening Etsy Store...') },
+                    { label: 'Redbubble', link: '#', onClick: () => showToast('Opening Redbubble...') },
+                    { label: 'Gumroad', link: '#', onClick: () => showToast('Opening Gumroad...') }
+                  ]} 
+                />
+                <a 
+                  href="#faq" 
+                  style={{ color: 'white', textDecoration: 'none', margin: '0 15px', fontWeight: 'bold', transition: 'color 0.2s' }}
+                  onMouseEnter={(e) => e.target.style.color = '#45FFEF'}
+                  onMouseLeave={(e) => e.target.style.color = 'white'}
+                >
+                  Frequently Asked
+                </a>
+                <HeaderDropdown 
+                  title="Contact Us" 
+                  items={[
+                    { label: 'Twitter', link: '#', onClick: () => showToast('Opening Twitter...') },
+                    { label: 'Instagram', link: '#', onClick: () => showToast('Opening Instagram...') },
+                    { label: 'Discord', link: '#', onClick: () => showToast('Joining Discord server...') }
+                  ]} 
+                />
+            </nav>
+            <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+              <button 
+                onClick={onLoginClick}
+                style={{ margin: '0 10px', padding: '10px 20px', backgroundColor: 'transparent', color: 'white', border: '1px solid #45FFFF', borderRadius: '25px', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                onMouseEnter={(e) => { e.target.style.backgroundColor = '#45FFFF'; e.target.style.color = 'black'; }}
+                onMouseLeave={(e) => { e.target.style.backgroundColor = 'transparent'; e.target.style.color = 'white'; }}
+              >
+                Login
+              </button>
+              <button 
+                onClick={onSignUpClick}
+                style={{ margin: '0 10px', padding: '10px 20px', backgroundColor: 'transparent', color: 'white', border: '1px solid #45FFFF', borderRadius: '25px', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                onMouseEnter={(e) => { e.target.style.backgroundColor = '#45FFFF'; e.target.style.color = 'black'; }}
+                onMouseLeave={(e) => { e.target.style.backgroundColor = 'transparent'; e.target.style.color = 'white'; }}
+              >
+                Sign Up
+              </button>
+            </div>
+          </>
+        )}
       </header>
 
       {/* Hero Section */}
-      <section style={{ textAlign: 'left', padding: '50px', maxWidth: '800px', margin: '0 auto' }}>
-        <h1>Welcome to Mo-Draws</h1>
-        <p>Your ultimate platform for storing and showcasing digital illustrations.</p>
-        <p>Upload, organize, and share your artwork with ease.</p>
+      <section id="hero" style={{ textAlign: isMobile ? 'center' : 'left', padding: isMobile ? '40px 20px' : '50px', maxWidth: '800px', margin: '0 auto' }}>
+        <h1 style={{ fontSize: isMobile ? '2.2em' : '3em', marginBottom: '20px' }}>Welcome to Mo-Draws</h1>
+        <p style={{ fontSize: isMobile ? '1.1em' : '1.2em' }}>Your ultimate platform for storing and showcasing digital illustrations.</p>
+        <p style={{ fontSize: isMobile ? '1.1em' : '1.2em' }}>Upload, organize, and share your artwork with ease.</p>
         <button 
           onClick={onSignUpClick}
           style={{ margin: '10px 0', padding: '15px 30px', fontSize: '1.2em', border: '1px solid #45FFFF', backgroundColor: isHeroHovered ? '#45FFFF' : 'transparent', color: isHeroHovered ? 'black' : 'white', borderRadius: '25px', cursor: 'pointer', transition: 'all 0.2s ease', display: 'inline-flex', alignItems: 'center' }}
@@ -215,17 +348,17 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
       </section>
 
       {/* About the Creator Section */}
-      <section style={{ padding: '50px', backgroundColor: 'black', display: 'flex', justifyContent: 'center' }}>
-        <div style={{ display: 'flex', maxWidth: '800px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ flex: '1', minWidth: '250px', padding: '20px', textAlign: 'center' }}>
+      <section id="creator" style={{ padding: isMobile ? '30px 20px' : '50px', backgroundColor: 'black', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', maxWidth: '800px', alignItems: 'center', flexWrap: 'wrap', flexDirection: isMobile ? 'column' : 'row' }}>
+          <div style={{ flex: '1', minWidth: isMobile ? '100%' : '250px', padding: isMobile ? '10px' : '20px', textAlign: 'center' }}>
             <img 
               src="img/Princess.png" 
               alt="The Creator" 
-              style={{  width: '250px', height: '250px', objectFit: 'cover' }} 
+              style={{ width: isMobile ? '200px' : '250px', height: isMobile ? '200px' : '250px', objectFit: 'cover', borderRadius: isMobile ? '50%' : '0' }} 
             />
           </div>
-          <div style={{ flex: '2', minWidth: '300px', padding: '20px', textAlign: 'left' }}>
-            <h2>About the Creator</h2>
+          <div style={{ flex: '2', minWidth: isMobile ? '100%' : '300px', padding: isMobile ? '10px' : '20px', textAlign: isMobile ? 'center' : 'left' }}>
+            <h2 style={{ fontSize: isMobile ? '1.8em' : '2em' }}>About the Creator</h2>
             <p>
               Hello! I'm the creator of Mo-Draws. As a passionate digital artist/developer myself, I wanted to build a platform that truly understands the needs of creators. Mo-Draws was born out of the desire to have a seamless, beautiful, and organized space to store and showcase illustrations. My mission is to empower artists worldwide to share their vision and connect with others who appreciate digital art.
             </p>
@@ -234,15 +367,15 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
       </section>
 
       {/* About Sections */}
-      <section style={{ padding: '50px', backgroundColor: 'black' }}>
-        <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '40px' }}>
-          <div style={{ flex: '1', minWidth: '300px', textAlign: 'left' }}>
-            <h2>What is Mo-Draws?</h2>
+      <section id="about" style={{ padding: isMobile ? '30px 20px' : '50px', backgroundColor: 'black' }}>
+        <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: isMobile ? '20px' : '40px' }}>
+          <div style={{ flex: '1', minWidth: isMobile ? '100%' : '300px', textAlign: isMobile ? 'center' : 'left' }}>
+            <h2 style={{ fontSize: isMobile ? '1.8em' : '2em' }}>What is Mo-Draws?</h2>
             <p>Mo-Draws is a dedicated space for digital artists to store, organize, and showcase their illustrations. Whether you're a professional artist or a hobbyist, our platform provides the tools you need to manage your portfolio and connect with an audience.</p>
           </div>
-          <div style={{ flex: '1.5', minWidth: '350px', display: 'flex', flexDirection: 'row', gap: '15px' }}>
+          <div style={{ flex: '1.5', minWidth: isMobile ? '100%' : '350px', display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '15px' }}>
             {/* Left Column: Image Slider */}
-            <div style={{ flex: '2', position: 'relative', borderRadius: '10px', overflow: 'hidden', border: '2px solid #857AFF' }}>
+            <div style={{ flex: '2', position: 'relative', borderRadius: '10px', overflow: 'hidden', border: '2px solid #857AFF', minHeight: isMobile ? '250px' : 'auto' }}>
               <img 
                 src={sliderImages[currentSlide]} 
                 alt={`Slide ${currentSlide + 1}`} 
@@ -261,7 +394,7 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
             </div>
             
             {/* Right Column: Videos (Stacked vertically) */}
-            <div style={{ flex: '1', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <div style={{ flex: '1', display: 'flex', flexDirection: isMobile ? 'row' : 'column', gap: '15px' }}>
               <CustomVideoPlayer src="https://www.w3schools.com/html/mov_bbb.mp4" />
               <CustomVideoPlayer src="https://www.w3schools.com/html/mov_bbb.mp4" />
             </div>
@@ -269,10 +402,10 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
         </div>
       </section>
 
-      <section style={{ padding: '50px', backgroundColor: 'black' }}>
-        <h2>Key Features</h2>
-        <div style={{ display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap' }}>
-          <div style={{ maxWidth: '300px', margin: '20px', border: '1px solid #857AFF', padding: '20px', borderRadius: '10px', textAlign: 'center' }}>
+      <section id="features" style={{ padding: isMobile ? '30px 20px' : '50px', backgroundColor: 'black', textAlign: 'center' }}>
+        <h2 style={{ fontSize: isMobile ? '1.8em' : '2em', marginBottom: '30px' }}>Key Features</h2>
+        <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: isMobile ? '20px' : '40px', flexDirection: isMobile ? 'column' : 'row', alignItems: 'center' }}>
+          <div style={{ maxWidth: isMobile ? '100%' : '300px', width: isMobile ? '100%' : 'auto', border: '1px solid #857AFF', padding: '20px', borderRadius: '10px', textAlign: 'center', boxSizing: 'border-box' }}>
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#45FFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '15px' }}>
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
               <polyline points="17 8 12 3 7 8"></polyline>
@@ -281,7 +414,7 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
             <h3>Easy Uploads</h3>
             <p>Upload your digital art in various formats and organize them into collections.</p>
           </div>
-          <div style={{ maxWidth: '300px', margin: '20px', border: '1px solid #857AFF', padding: '20px', borderRadius: '10px', textAlign: 'center' }}>
+          <div style={{ maxWidth: isMobile ? '100%' : '300px', width: isMobile ? '100%' : 'auto', border: '1px solid #857AFF', padding: '20px', borderRadius: '10px', textAlign: 'center', boxSizing: 'border-box' }}>
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#FF006B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '15px' }}>
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
               <circle cx="8.5" cy="8.5" r="1.5"></circle>
@@ -290,7 +423,7 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
             <h3>Showcase Your Work</h3>
             <p>Display your artwork beautifully with customizable galleries.</p>
           </div>
-          <div style={{ maxWidth: '300px', margin: '20px', border: '1px solid #857AFF', padding: '20px', borderRadius: '10px', textAlign: 'center' }}>
+          <div style={{ maxWidth: isMobile ? '100%' : '300px', width: isMobile ? '100%' : 'auto', border: '1px solid #857AFF', padding: '20px', borderRadius: '10px', textAlign: 'center', boxSizing: 'border-box' }}>
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#857AFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '15px' }}>
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
               <circle cx="9" cy="7" r="4"></circle>
@@ -304,9 +437,9 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
       </section>
 
       {/* FAQ Section */}
-      <section id="faq" style={{ padding: '50px', backgroundColor: 'black' }}>
+      <section id="faq" style={{ padding: isMobile ? '30px 20px' : '50px', backgroundColor: 'black' }}>
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-          <h2 style={{ textAlign: 'center', marginBottom: '30px', color: '#45FFEF' }}>Frequently Asked Questions</h2>
+          <h2 style={{ textAlign: 'center', marginBottom: '30px', color: '#45FFEF', fontSize: isMobile ? '1.8em' : '2em' }}>Frequently Asked Questions</h2>
           <FAQItem question="Is Mo-Draws free to use?" answer="Yes! Mo-Draws offers a free basic tier for you to upload and organize your digital illustrations. We also have premium tiers with more storage and advanced features." />
           <FAQItem question="What file formats are supported?" answer="We currently support most common image formats including JPEG, PNG, GIF, and SVG." />
           <FAQItem question="Can I keep my artwork private?" answer="Absolutely. You can set individual pieces or entire collections to private, meaning only you can see them until you're ready to share." />
@@ -314,55 +447,57 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
       </section>
 
       {/* Footer */}
-      <footer style={{ padding: '50px 20px', backgroundColor: '#0a0a0a', color: 'white', borderTop: '1px solid #222' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '30px', maxWidth: '1000px', margin: '0 auto', textAlign: 'left' }}>
+      <footer style={{ padding: isMobile ? '30px 20px' : '50px 20px', backgroundColor: '#0a0a0a', color: 'white', borderTop: '1px solid #222' }}>
+        <div style={{ display: 'flex', justifyContent: isMobile ? 'center' : 'space-between', flexDirection: isMobile ? 'column' : 'row', flexWrap: 'wrap', gap: isMobile ? '20px' : '30px', maxWidth: '1000px', margin: '0 auto', textAlign: isMobile ? 'center' : 'left' }}>
           
           {/* 1. Logo */}
-          <div style={{ flex: '1', minWidth: '150px', marginBottom: '20px' }}>
-            <h2 style={{ fontSize: '2.5em', margin: '0' }}>
-              <span style={{ color: '#FF006B' }}>Mo</span>
-              <span style={{ color: '#857AFF' }}>Draws</span>
-            </h2>
+          <div style={{ flex: '1', minWidth: '150px', marginBottom: isMobile ? '10px' : '20px' }}>
+            <a href="#hero" onClick={(e) => { e.preventDefault(); document.getElementById('hero')?.scrollIntoView({ behavior: 'smooth' }); }} style={{ textDecoration: 'none' }}>
+              <h2 style={{ fontSize: '2.5em', margin: '0' }}>
+                <span style={{ color: '#FF006B' }}>Mo</span>
+                <span style={{ color: '#857AFF' }}>Draws</span>
+              </h2>
+            </a>
           </div>
 
           {/* 2. Things you can do */}
-          <div style={{ flex: '1', minWidth: '150px', marginBottom: '20px' }}>
+          <div style={{ flex: '1', minWidth: '150px', marginBottom: isMobile ? '10px' : '20px' }}>
             <h4 style={{ color: '#45FFEF', marginBottom: '15px' }}>Built For Creatives</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <FooterLink href="#">Upload Art</FooterLink>
-              <FooterLink href="#">Build Portfolio</FooterLink>
-              <FooterLink href="#">Join Community</FooterLink>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: isMobile ? 'center' : 'flex-start' }}>
+              <FooterLink href="#features">Upload Art</FooterLink>
+              <FooterLink href="#features">Build Portfolio</FooterLink>
+              <FooterLink href="#about">Join Community</FooterLink>
             </div>
           </div>
 
           {/* 3. Talents */}
-          <div style={{ flex: '1', minWidth: '150px', marginBottom: '20px' }}>
+          <div style={{ flex: '1', minWidth: '150px', marginBottom: isMobile ? '10px' : '20px' }}>
             <h4 style={{ color: '#45FFEF', marginBottom: '15px' }}>Find Talent</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <FooterLink href="#">Illustrators</FooterLink>
-              <FooterLink href="#">Concept Artists</FooterLink>
-              <FooterLink href="#">Animators</FooterLink>
-              <FooterLink href="#">Video Editors</FooterLink>
-              <FooterLink href="#">Graphic Designers</FooterLink>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: isMobile ? 'center' : 'flex-start' }}>
+              <FooterLink href="#hero">Illustrations</FooterLink>
+              <FooterLink href="#hero">Concept Arts</FooterLink>
+              <FooterLink href="#hero">Animations</FooterLink>
+              <FooterLink href="#hero">Video Edits</FooterLink>
+              <FooterLink href="#hero">Graphic Designs</FooterLink>
             </div>
           </div>
 
           {/* 4. About */}
-          <div style={{ flex: '1', minWidth: '150px', marginBottom: '20px' }}>
+          <div style={{ flex: '1', minWidth: '150px', marginBottom: isMobile ? '10px' : '20px' }}>
             <h4 style={{ color: '#45FFEF', marginBottom: '15px' }}>Mo-Draws</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <FooterLink href="#">About Us</FooterLink>
-              <FooterLink href="#">Careers</FooterLink>
-              <FooterLink href="#">Guidelines</FooterLink>
-              <FooterLink href="#">Help centre</FooterLink>
-              <FooterLink href="#">Our Team</FooterLink>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: isMobile ? 'center' : 'flex-start' }}>
+              <FooterLink href="/aboutuspage">About Us</FooterLink>
+              <FooterLink href="#features">Careers</FooterLink>
+              <FooterLink href="#faq">Guidelines</FooterLink>
+              <FooterLink href="#faq">Help centre</FooterLink>
+              <FooterLink href="#creator">Our Team</FooterLink>
             </div>
           </div>
         
           {/* 5. Social Media */}
-          <div style={{ flex: '1', minWidth: '150px', marginBottom: '20px' }}>
-            <h4 style={{ color: '#45FFEF', marginBottom: '15px' }}>Follow Us</h4>
-            <div style={{ display: 'flex', gap: '15px' }}>
+          <div style={{ flex: '1', minWidth: '150px', marginBottom: isMobile ? '10px' : '20px' }}>
+            <h4 style={{ color: '#45FFEF', marginBottom: '15px' }}>Contact Us</h4>
+            <div style={{ display: 'flex', gap: '15px', justifyContent: isMobile ? 'center' : 'flex-start' }}>
               <a href="#" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#45FFFF', textDecoration: 'none', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = 'white'} onMouseLeave={(e) => e.target.style.color = '#45FFFF'}>
                 <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 448 512" height="1.5em" width="1.5em" xmlns="http://www.w3.org/2000/svg"><path d="M448 209.91a210.06 210.06 0 0 1-122.77-39.25V349.38A162.55 162.55 0 1 1 185 188.31V278.2a74.62 74.62 0 1 0 52.23 50.85V0h88a148.62 148.62 0 0 0 148.62 148.62z"></path></svg>
               </a>
@@ -378,9 +513,42 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
         </div>
         
         <div style={{ textAlign: 'center', marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #222' }}>
-          <p style={{ fontSize: '0.8em', margin: 0, color: '#ccc' }}>&copy; 2026 Mo-Draws. All rights reserved.</p>
+          <p style={{ fontSize: '0.8em', margin: 0, color: '#ccc' }}>&copy; {new Date().getFullYear()} Mo-Draws. All rights reserved.</p>
         </div>
       </footer>
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div style={{
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          backgroundColor: '#1a1a1a',
+          border: '1px solid #333',
+          borderLeft: '4px solid #857AFF',
+          borderRadius: '8px',
+          padding: '15px 20px',
+          color: 'white',
+          boxShadow: '0 5px 15px rgba(0,0,0,0.5)',
+          zIndex: 2000,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          animation: isToastClosing ? 'toastSlideOut 0.3s ease-in forwards' : 'toastSlideIn 0.3s ease-out forwards'
+        }}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#857AFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          <span style={{ fontSize: '14px', fontWeight: 'bold', flex: 1, marginRight: '10px' }}>{toastMessage}</span>
+          <button 
+            onClick={closeToast}
+            style={{ background: 'transparent', border: 'none', color: '#aaa', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'color 0.2s ease' }}
+            onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
+            onMouseLeave={(e) => e.currentTarget.style.color = '#aaa'}
+            title="Dismiss"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+      )}
     </div>
   );
 };
