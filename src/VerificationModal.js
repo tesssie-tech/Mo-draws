@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 const VerificationModal = ({ isOpen, onClose, email, onVerify, showToast }) => {
   const [verificationCode, setVerificationCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [lightModalMessage, setLightModalMessage] = useState('');
 
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [isClosing, setIsClosing] = useState(false);
@@ -19,7 +20,7 @@ const VerificationModal = ({ isOpen, onClose, email, onVerify, showToast }) => {
       if (showToast) {
         showToast('Please enter a verification code');
       } else {
-        alert('Please enter a verification code');
+        setLightModalMessage('Please enter a verification code');
       }
       return;
     }
@@ -180,6 +181,45 @@ const VerificationModal = ({ isOpen, onClose, email, onVerify, showToast }) => {
           </span>
         </p>
       </div>
+
+      {lightModalMessage && (
+        <div
+          onClick={() => setLightModalMessage('')}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1200,
+            padding: '20px'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: '380px',
+              backgroundColor: '#f8fafc',
+              border: '1px solid #857AFF',
+              borderRadius: '12px',
+              padding: '20px'
+            }}
+          >
+            <h3 style={{ margin: '0 0 10px 0', color: '#111' }}>Notice</h3>
+            <p style={{ margin: 0, color: '#334155' }}>{lightModalMessage}</p>
+            <div style={{ marginTop: '16px', textAlign: 'right' }}>
+              <button
+                onClick={() => setLightModalMessage('')}
+                style={{ border: '1px solid #857AFF', backgroundColor: '#857AFF', color: '#fff', borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

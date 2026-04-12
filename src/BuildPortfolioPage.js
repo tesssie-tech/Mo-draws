@@ -72,6 +72,7 @@ const BuildPortfolioPage = () => {
   const [artworkLayout, setArtworkLayout] = useState('single');
   const [shareNotice, setShareNotice] = useState('');
   const [saveWarning, setSaveWarning] = useState('');
+  const [lightModalMessage, setLightModalMessage] = useState('');
   const [editingItemId, setEditingItemId] = useState(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -234,12 +235,12 @@ const BuildPortfolioPage = () => {
     e.preventDefault();
 
     if (!title.trim() || !description.trim()) {
-      alert('Please fill in both title and description.');
+      setLightModalMessage('Please fill in both title and description.');
       return;
     }
 
     if (entryType === 'artwork' && imageDataList.length === 0) {
-      alert('Please upload image(s) for artwork entries.');
+      setLightModalMessage('Please upload image(s) for artwork entries.');
       return;
     }
 
@@ -321,7 +322,7 @@ const BuildPortfolioPage = () => {
 
     const nonImage = files.find((file) => !file.type.startsWith('image/'));
     if (nonImage) {
-      alert('Please select image files only.');
+      setLightModalMessage('Please select image files only.');
       e.target.value = '';
       return;
     }
@@ -1112,6 +1113,47 @@ const BuildPortfolioPage = () => {
           )}
         </section>
       </main>
+
+      {lightModalMessage && (
+        <div
+          onClick={() => setLightModalMessage('')}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000,
+            padding: '20px'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: '420px',
+              backgroundColor: '#f8fafc',
+              border: '1px solid #857AFF',
+              borderRadius: '12px',
+              padding: '22px',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.28)'
+            }}
+          >
+            <h3 style={{ margin: '0 0 10px 0', color: '#111' }}>Notice</h3>
+            <p style={{ margin: 0, color: '#334155', lineHeight: 1.5 }}>{lightModalMessage}</p>
+            <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setLightModalMessage('')}
+                style={{ border: '1px solid #857AFF', backgroundColor: '#857AFF', color: '#fff', borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

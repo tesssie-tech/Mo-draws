@@ -6,11 +6,12 @@ const SignUpPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [lightModalMessage, setLightModalMessage] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      alert('Passwords do not match');
+      setLightModalMessage('Passwords do not match');
       return;
     }
     // Handle sign up logic here
@@ -64,6 +65,45 @@ const SignUpPage = () => {
         <button type="submit" style={{ margin: '10px', padding: '10px 20px', backgroundColor: 'transparent', color: 'white', border: '1px solid #45FFFF', borderRadius: '25px', cursor: 'pointer' }}>Sign Up</button>
       </form>
       <p>Already have an account? <Link to="/login" style={{ color: '#857AFF', fontWeight: 'bold' }}>Login</Link></p>
+      {lightModalMessage && (
+        <div
+          onClick={() => setLightModalMessage('')}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000,
+            padding: '20px'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: '400px',
+              backgroundColor: '#f8fafc',
+              border: '1px solid #857AFF',
+              borderRadius: '12px',
+              padding: '20px',
+              textAlign: 'left'
+            }}
+          >
+            <h3 style={{ margin: '0 0 10px 0', color: '#111' }}>Notice</h3>
+            <p style={{ margin: 0, color: '#334155' }}>{lightModalMessage}</p>
+            <div style={{ marginTop: '16px', textAlign: 'right' }}>
+              <button
+                onClick={() => setLightModalMessage('')}
+                style={{ border: '1px solid #857AFF', backgroundColor: '#857AFF', color: '#fff', borderRadius: '8px', padding: '8px 14px', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

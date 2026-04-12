@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 
 const FooterLink = ({ href, children, category }) => {
   const handleClick = (e) => {
@@ -480,7 +480,7 @@ const ArtworkCard = ({
   );
 };
 
-const DashboardPage = ({ user, onLogout, onUpdateUser }) => {
+const DashboardPage = ({ user, onLogout, onUpdateUser, isNewUserSession = false }) => {
   const [previewImage, setPreviewImage] = useState(null);
   const [artworkTitle, setArtworkTitle] = useState('');
   const [artworkCategory, setArtworkCategory] = useState('Illustrations');
@@ -693,6 +693,22 @@ const DashboardPage = ({ user, onLogout, onUpdateUser }) => {
   const [isToastClosing, setIsToastClosing] = useState(false);
   const toastTimeoutRef = useRef(null);
   const toastCloseTimeoutRef = useRef(null);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Confirm',
+    isDanger: false,
+    onConfirm: null
+  });
+  const [inputModal, setInputModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    value: '',
+    confirmText: 'Save',
+    onConfirm: null
+  });
 
   const closeToast = () => {
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
@@ -712,6 +728,36 @@ const DashboardPage = ({ user, onLogout, onUpdateUser }) => {
     setIsToastClosing(false);
     
     toastTimeoutRef.current = setTimeout(closeToast, 3000); // Show toast for 3 seconds
+  };
+
+  const openConfirmModal = ({ title, message, confirmText = 'Confirm', isDanger = false, onConfirm }) => {
+    setConfirmModal({
+      isOpen: true,
+      title,
+      message,
+      confirmText,
+      isDanger,
+      onConfirm
+    });
+  };
+
+  const closeConfirmModal = () => {
+    setConfirmModal((prev) => ({ ...prev, isOpen: false, onConfirm: null }));
+  };
+
+  const openInputModal = ({ title, message, initialValue = '', confirmText = 'Save', onConfirm }) => {
+    setInputModal({
+      isOpen: true,
+      title,
+      message,
+      value: initialValue,
+      confirmText,
+      onConfirm
+    });
+  };
+
+  const closeInputModal = () => {
+    setInputModal((prev) => ({ ...prev, isOpen: false, onConfirm: null }));
   };
   
   const ARTWORKS_PER_PAGE = 9; // Number of artworks to display per load
@@ -735,6 +781,71 @@ const DashboardPage = ({ user, onLogout, onUpdateUser }) => {
   const [artworkVisibility, setArtworkVisibility] = useState('Public');
   const [visibilityFilter, setVisibilityFilter] = useState('All');
   const [sortOrder, setSortOrder] = useLocalStorage('sortOrder', 'newest', false);
+  const helpStorageKey = `dashboardHelpSeen:${(user?.email || 'guest').toLowerCase()}`;
+  const [helpProgress, setHelpProgress] = useLocalStorage(helpStorageKey, { welcome: false, nav: {} });
+  const [helpModal, setHelpModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    tips: []
+  });
+
+  const helpContentByNav = useMemo(() => ({
+    dashboard: {
+      title: 'Dashboard Guide',
+      message: 'This is your creative command center.',
+      tips: ['Track views and followers at the top.', 'Upload new work quickly from the upload card.', 'Use quick actions to manage recent artworks.']
+    },
+    'for-you': {
+      title: 'For You Guide',
+      message: 'Discover artworks curated for your interests.',
+      tips: ['Use category filters to narrow results.', 'Tap an artwork to open details and comments.', 'Like or favorite pieces to personalize your feed.']
+    },
+    gallery: {
+      title: 'My Gallery Guide',
+      message: 'Manage everything you uploaded here.',
+      tips: ['Filter by visibility and category.', 'Edit titles or remove artworks.', 'Open any artwork to review comments and stats.']
+    },
+    profile: {
+      title: 'Profile Guide',
+      message: 'Customize how your artist profile appears.',
+      tips: ['Update bio, portfolio link, and avatar.', 'Save profile updates from the profile form.', 'Check live follower/following counters.']
+    },
+    favorites: {
+      title: 'Favorites Guide',
+      message: 'Keep track of artworks you love.',
+      tips: ['Your liked items appear here automatically.', 'Use search and sort to find saved pieces quickly.', 'Open items to revisit details and creators.']
+    },
+    followers: {
+      title: 'Network Guide',
+      message: 'Manage your followers and connections.',
+      tips: ['Switch between Followers and Following tabs.', 'Mute, block, or start a chat from user actions.', 'Use search to find specific people fast.']
+    },
+    messages: {
+      title: 'Messages Guide',
+      message: 'Chat with your network in real time style.',
+      tips: ['Select a conversation from the left list.', 'Send text and image messages.', 'Unread counts clear when you open a thread.']
+    },
+    settings: {
+      title: 'Settings Guide',
+      message: 'Control your account, privacy, and app look.',
+      tips: ['Toggle notifications and profile visibility.', 'Switch between dark, light, or system theme.', 'Use danger zone carefully for account deletion.']
+    }
+  }), []);
+
+  const openHelpModal = (content) => {
+    if (!content) return;
+    setHelpModal({
+      isOpen: true,
+      title: content.title,
+      message: content.message,
+      tips: content.tips || []
+    });
+  };
+
+  const closeHelpModal = () => {
+    setHelpModal((prev) => ({ ...prev, isOpen: false }));
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -822,10 +933,15 @@ const DashboardPage = ({ user, onLogout, onUpdateUser }) => {
 
   // Load settings from localStorage or use defaults
   const [emailNotifications, setEmailNotifications] = useLocalStorage('emailNotifications', true);
-  const [publicProfile, setPublicProfile] = useLocalStorage('publicProfile', false);
+  const [publicProfile, setPublicProfile] = useLocalStorage('publicProfile', true);
   const [appTheme, setAppTheme] = useLocalStorage('appTheme', 'dark', false);
   const [accentColor, setAccentColor] = useLocalStorage('accentColor', '#857AFF', false);
   const [gridSize, setGridSize] = useLocalStorage('gridSize', 'medium', false);
+
+  const effectiveTheme = appTheme === 'system'
+    ? ((typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark')
+    : appTheme;
+  const isLightTheme = effectiveTheme === 'light';
 
   useEffect(() => {
     if (window.location.pathname !== `/${activeNav}`) {
@@ -855,6 +971,42 @@ const DashboardPage = ({ user, onLogout, onUpdateUser }) => {
       }
     }
   }, [activeNav]);
+
+  useEffect(() => {
+    if (helpModal.isOpen) return;
+    if (helpProgress?.welcome) return;
+
+    if (isNewUserSession || !helpProgress?.welcome) {
+      openHelpModal({
+        title: 'Welcome to Mo-Draws',
+        message: 'Quick directions to get started with confidence.',
+        tips: [
+          'Upload your first artwork from Dashboard or Gallery.',
+          'Use For You to discover creators and inspiration.',
+          'Visit Settings anytime to control privacy and appearance.'
+        ]
+      });
+      setHelpProgress((prev) => ({ ...prev, welcome: true, nav: prev?.nav || {} }));
+    }
+  }, [helpModal.isOpen, helpProgress, isNewUserSession, setHelpProgress]);
+
+  useEffect(() => {
+    if (helpModal.isOpen) return;
+    if (!helpProgress?.welcome) return;
+    if (helpProgress?.nav?.[activeNav]) return;
+
+    const navHelp = helpContentByNav[activeNav];
+    if (!navHelp) return;
+
+    openHelpModal(navHelp);
+    setHelpProgress((prev) => ({
+      ...prev,
+      nav: {
+        ...(prev?.nav || {}),
+        [activeNav]: true
+      }
+    }));
+  }, [activeNav, helpModal.isOpen, helpProgress, setHelpProgress, helpContentByNav]);
 
   useEffect(() => {
     if (!hasMountedNavRef.current) {
@@ -1091,26 +1243,40 @@ const DashboardPage = ({ user, onLogout, onUpdateUser }) => {
 
   const handleDeleteArtwork = (id, e) => {
     e.stopPropagation();
-    if (window.confirm('Are you sure you want to delete this artwork?')) {
-      setUploadedArtworks(prev => prev.filter(art => art.id !== id));
-      setRecommendedArtworks(prev => prev.filter(art => art.id !== id));
-    }
+    openConfirmModal({
+      title: 'Delete Artwork',
+      message: 'Are you sure you want to delete this artwork?',
+      confirmText: 'Delete',
+      isDanger: true,
+      onConfirm: () => {
+        setUploadedArtworks(prev => prev.filter(art => art.id !== id));
+        setRecommendedArtworks(prev => prev.filter(art => art.id !== id));
+      }
+    });
   };
 
   const handleEditArtworkTitle = (id, currentTitle, e) => {
     e.stopPropagation();
-    const newTitle = window.prompt('Enter new title:', currentTitle);
-    if (newTitle !== null && newTitle.trim() !== '') {
-      setUploadedArtworks(prev => prev.map(art => 
-        art.id === id ? { ...art, title: newTitle.trim() } : art
-      ));
-      setRecommendedArtworks(prev => prev.map(art => 
-        art.id === id ? { ...art, title: newTitle.trim() } : art
-      ));
-      if (selectedArtwork && selectedArtwork.id === id) {
-        setSelectedArtwork(prev => ({ ...prev, title: newTitle.trim() }));
+    openInputModal({
+      title: 'Rename Artwork',
+      message: 'Enter a new artwork title.',
+      initialValue: currentTitle,
+      confirmText: 'Save',
+      onConfirm: (newTitle) => {
+        const trimmedTitle = newTitle.trim();
+        if (!trimmedTitle) return;
+
+        setUploadedArtworks(prev => prev.map(art => 
+          art.id === id ? { ...art, title: trimmedTitle } : art
+        ));
+        setRecommendedArtworks(prev => prev.map(art => 
+          art.id === id ? { ...art, title: trimmedTitle } : art
+        ));
+        if (selectedArtwork && selectedArtwork.id === id) {
+          setSelectedArtwork(prev => ({ ...prev, title: trimmedTitle }));
+        }
       }
-    }
+    });
   };
 
   const toggleFavorite = (artwork, e) => {
@@ -1252,38 +1418,87 @@ const DashboardPage = ({ user, onLogout, onUpdateUser }) => {
   };
 
   const handleDeleteComment = (artworkId, commentId, parentId = null) => {
-    if (window.confirm('Are you sure you want to delete this comment?')) {
-      setArtworkComments(prev => ({
-        ...prev,
-        [artworkId]: parentId 
-          ? prev[artworkId].map(c => c.id === parentId ? { ...c, replies: (c.replies || []).filter(r => r.id !== commentId) } : c)
-          : prev[artworkId].filter(c => c.id !== commentId)
-      }));
-      showToast('Comment deleted successfully.');
-    }
+    openConfirmModal({
+      title: 'Delete Comment',
+      message: 'Are you sure you want to delete this comment?',
+      confirmText: 'Delete',
+      isDanger: true,
+      onConfirm: () => {
+        setArtworkComments(prev => ({
+          ...prev,
+          [artworkId]: parentId 
+            ? prev[artworkId].map(c => c.id === parentId ? { ...c, replies: (c.replies || []).filter(r => r.id !== commentId) } : c)
+            : prev[artworkId].filter(c => c.id !== commentId)
+        }));
+        showToast('Comment deleted successfully.');
+      }
+    });
   };
 
   const handleLogout = () => {
-    if (window.confirm('Are you sure you want to logout?')) {
-      onLogout();
-    }
+    openConfirmModal({
+      title: 'Logout',
+      message: 'Are you sure you want to logout?',
+      confirmText: 'Logout',
+      onConfirm: () => onLogout()
+    });
   };
 
-  const handleDeleteAccount = () => {
-    if (window.confirm('Are you absolutely sure you want to delete your account? This action cannot be undone.')) {
-      // Simulate account deletion by clearing user data from local storage
-      localStorage.removeItem('uploadedArtworks');
-      localStorage.removeItem('favoriteArtworks');
-      localStorage.removeItem('notificationReadStatus');
-      localStorage.removeItem('clearedNotifications');
-      localStorage.removeItem('followersList');
-      localStorage.removeItem('blockedUsers');
-      localStorage.removeItem('mutedUsers');
-      localStorage.removeItem('userBio');
-      localStorage.removeItem('userPortfolio');
-      localStorage.removeItem('userAvatar');
-      onLogout();
-    }
+  const handleDeleteAccount = async () => {
+    openConfirmModal({
+      title: 'Delete Account',
+      message: 'Are you absolutely sure you want to delete your account? This action cannot be undone.',
+      confirmText: 'Delete Account',
+      isDanger: true,
+      onConfirm: async () => {
+        const keysToRemove = [
+          'activeNav',
+          'favoriteArtworks',
+          'followersList',
+          'blockedUsers',
+          'mutedUsers',
+          'recommendedArtworks',
+          'notificationReadStatus',
+          'clearedNotifications',
+          'artworkComments',
+          'conversations',
+          'userAvatar',
+          'userBio',
+          'userPortfolio',
+          'sortOrder',
+          'emailNotifications',
+          'publicProfile',
+          'appTheme',
+          'accentColor',
+          'gridSize',
+          'uploadedArtworks',
+          'uploadedArtworksMeta',
+          'portfolioItems',
+          'portfolioItemsMeta'
+        ];
+
+        keysToRemove.forEach((key) => localStorage.removeItem(key));
+
+        const deleteDb = (dbName) =>
+          new Promise((resolve) => {
+            if (!window.indexedDB) {
+              resolve();
+              return;
+            }
+            const request = window.indexedDB.deleteDatabase(dbName);
+            request.onsuccess = () => resolve();
+            request.onerror = () => resolve();
+            request.onblocked = () => resolve();
+          });
+
+        await Promise.allSettled([
+          deleteDb(DASHBOARD_UPLOAD_DB_NAME),
+          deleteDb(PORTFOLIO_DB_NAME)
+        ]);
+
+        onLogout();
+      }
+    });
   };
 
   const navItems = [
@@ -1353,7 +1568,16 @@ const DashboardPage = ({ user, onLogout, onUpdateUser }) => {
   );
 
   return (
-    <div style={{ backgroundColor: 'black', color: 'white', height: '100vh', display: 'flex', overflow: 'hidden' }}>
+    <div
+      className={isLightTheme ? 'theme-light' : 'theme-dark'}
+      style={{
+        backgroundColor: isLightTheme ? '#f4f6fb' : 'black',
+        color: isLightTheme ? '#111' : 'white',
+        height: '100vh',
+        display: 'flex',
+        overflow: 'hidden'
+      }}
+    >
       <style>
         {`
           @keyframes tabFadeIn {
@@ -1409,6 +1633,15 @@ const DashboardPage = ({ user, onLogout, onUpdateUser }) => {
           .hide-scrollbar {
             -ms-overflow-style: none; /* IE and Edge */
             scrollbar-width: none; /* Firefox */
+          }
+
+          /* Practical light mode without rewriting all inline color styles */
+          .theme-light {
+            filter: invert(1) hue-rotate(180deg);
+          }
+          .theme-light img,
+          .theme-light video {
+            filter: invert(1) hue-rotate(180deg);
           }
         `}
       </style>
@@ -1638,37 +1871,62 @@ const DashboardPage = ({ user, onLogout, onUpdateUser }) => {
           {/* Right Side Actions */}
           <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '20px', flexWrap: isMobile ? 'wrap' : 'nowrap', justifyContent: 'flex-end' }}>
             {/* Search Bar */}
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#857AFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', left: '12px' }}>
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-              <input 
-                type="text" 
-                placeholder="Search..." 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+            {!isMobile ? (
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#857AFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', left: '12px' }}>
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input 
+                  type="text" 
+                  placeholder="Search..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    backgroundColor: '#1a1a1a',
+                    border: '1px solid #857AFF',
+                    borderRadius: '20px',
+                    padding: '10px 15px 10px 35px',
+                    color: 'white',
+                    outline: 'none',
+                    width: '250px',
+                    fontSize: '14px',
+                    transition: 'border-color 0.2s, box-shadow 0.2s, width 0.3s ease',
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#45FFEF';
+                    e.target.style.boxShadow = '0 0 8px rgba(69, 255, 239, 0.2)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = '#857AFF';
+                    e.target.style.boxShadow = 'none';
+                  }}
+                />
+              </div>
+            ) : (
+              <button
+                type="button"
+                title="Search"
+                aria-label="Search"
                 style={{
-                  backgroundColor: '#1a1a1a',
+                  backgroundColor: 'transparent',
                   border: '1px solid #857AFF',
-                  borderRadius: '20px',
-                  padding: '10px 15px 10px 35px',
-                  color: 'white',
-                  outline: 'none',
-                  width: isMobile ? '110px' : '250px',
-                  fontSize: '14px',
-                  transition: 'border-color 0.2s, box-shadow 0.2s, width 0.3s ease',
+                  color: '#857AFF',
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '8px',
+                  cursor: 'default',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = '#45FFEF';
-                  e.target.style.boxShadow = '0 0 8px rgba(69, 255, 239, 0.2)';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = '#857AFF';
-                  e.target.style.boxShadow = 'none';
-                }}
-              />
-            </div>
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </button>
+            )}
 
             {/* Sort Dropdown */}
             <CustomSelect
@@ -3699,10 +3957,16 @@ const DashboardPage = ({ user, onLogout, onUpdateUser }) => {
               </button>
               <button 
                 onClick={() => {
-                  if (window.confirm(`Are you sure you want to block ${userToUnfollow.name}? You won't see them in your network anymore.`)) {
-                    handleBlockUser(userToUnfollow);
-                    showToast(`${userToUnfollow.name} has been blocked.`);
-                  }
+                  openConfirmModal({
+                    title: 'Block User',
+                    message: `Are you sure you want to block ${userToUnfollow.name}? You won't see them in your network anymore.`,
+                    confirmText: 'Block',
+                    isDanger: true,
+                    onConfirm: () => {
+                      handleBlockUser(userToUnfollow);
+                      showToast(`${userToUnfollow.name} has been blocked.`);
+                    }
+                  });
                 }}
                 style={{ width: '100%', padding: '12px', backgroundColor: 'transparent', color: '#FF006B', border: '1px solid #FF006B', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.2s' }}
                 onMouseEnter={(e) => { e.target.style.backgroundColor = '#FF006B'; e.target.style.color = 'black'; }}
@@ -3717,6 +3981,239 @@ const DashboardPage = ({ user, onLogout, onUpdateUser }) => {
                 onMouseLeave={(e) => { e.target.style.backgroundColor = 'transparent'; e.target.style.color = '#ccc'; }}
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Light Help Modal */}
+      {helpModal.isOpen && (
+        <div
+          onClick={closeHelpModal}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.45)',
+            zIndex: 1799,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '20px',
+            animation: 'backdropFadeIn 0.2s ease forwards'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: '#f8fafc',
+              border: `1px solid ${accentColor}`,
+              borderRadius: '14px',
+              padding: isMobile ? '20px' : '24px',
+              maxWidth: '520px',
+              width: '100%',
+              boxShadow: '0 12px 36px rgba(0,0,0,0.28)',
+              animation: 'modalContentFadeIn 0.2s ease forwards'
+            }}
+          >
+            <h3 style={{ margin: '0 0 10px 0', color: '#111', fontSize: isMobile ? '1.1em' : '1.25em' }}>{helpModal.title}</h3>
+            <p style={{ margin: '0 0 14px 0', color: '#334155', fontSize: '14px', lineHeight: 1.5 }}>{helpModal.message}</p>
+            {helpModal.tips.length > 0 && (
+              <ul style={{ margin: '0 0 18px 18px', padding: 0, color: '#1f2937', fontSize: '14px', lineHeight: 1.6 }}>
+                {helpModal.tips.map((tip) => (
+                  <li key={tip} style={{ marginBottom: '6px' }}>{tip}</li>
+                ))}
+              </ul>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                onClick={closeHelpModal}
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  border: `1px solid ${accentColor}`,
+                  backgroundColor: accentColor,
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Light Confirm Modal */}
+      {confirmModal.isOpen && (
+        <div
+          onClick={closeConfirmModal}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.45)',
+            zIndex: 1800,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '20px',
+            animation: 'backdropFadeIn 0.2s ease forwards'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: '#f8fafc',
+              border: `1px solid ${accentColor}`,
+              borderRadius: '14px',
+              padding: '24px',
+              maxWidth: '440px',
+              width: '100%',
+              boxShadow: '0 12px 36px rgba(0,0,0,0.28)',
+              animation: 'modalContentFadeIn 0.2s ease forwards'
+            }}
+          >
+            <h3 style={{ margin: '0 0 10px 0', color: '#111', fontSize: '1.2em' }}>{confirmModal.title}</h3>
+            <p style={{ margin: '0 0 20px 0', color: '#334155', fontSize: '14px', lineHeight: 1.5 }}>{confirmModal.message}</p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                onClick={closeConfirmModal}
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#ffffff',
+                  color: '#111',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const action = confirmModal.onConfirm;
+                  closeConfirmModal();
+                  if (action) action();
+                }}
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  border: `1px solid ${confirmModal.isDanger ? '#dc2626' : accentColor}`,
+                  backgroundColor: confirmModal.isDanger ? '#dc2626' : accentColor,
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                {confirmModal.confirmText}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Light Input Modal */}
+      {inputModal.isOpen && (
+        <div
+          onClick={closeInputModal}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.45)',
+            zIndex: 1801,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '20px',
+            animation: 'backdropFadeIn 0.2s ease forwards'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: '#f8fafc',
+              border: `1px solid ${accentColor}`,
+              borderRadius: '14px',
+              padding: '24px',
+              maxWidth: '460px',
+              width: '100%',
+              boxShadow: '0 12px 36px rgba(0,0,0,0.28)',
+              animation: 'modalContentFadeIn 0.2s ease forwards'
+            }}
+          >
+            <h3 style={{ margin: '0 0 10px 0', color: '#111', fontSize: '1.2em' }}>{inputModal.title}</h3>
+            <p style={{ margin: '0 0 14px 0', color: '#334155', fontSize: '14px' }}>{inputModal.message}</p>
+            <input
+              type="text"
+              value={inputModal.value}
+              onChange={(e) => setInputModal((prev) => ({ ...prev, value: e.target.value }))}
+              autoFocus
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                border: '1px solid #cbd5e1',
+                borderRadius: '10px',
+                padding: '11px 12px',
+                fontSize: '14px',
+                color: '#111',
+                backgroundColor: '#fff',
+                marginBottom: '20px',
+                outline: 'none'
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const action = inputModal.onConfirm;
+                  const value = inputModal.value;
+                  closeInputModal();
+                  if (action) action(value);
+                }
+                if (e.key === 'Escape') closeInputModal();
+              }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                onClick={closeInputModal}
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#ffffff',
+                  color: '#111',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const action = inputModal.onConfirm;
+                  const value = inputModal.value;
+                  closeInputModal();
+                  if (action) action(value);
+                }}
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  border: `1px solid ${accentColor}`,
+                  backgroundColor: accentColor,
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                {inputModal.confirmText}
               </button>
             </div>
           </div>

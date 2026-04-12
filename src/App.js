@@ -61,6 +61,7 @@ function RouteTransitionLoader() {
 
 function App() {
   const [authModal, setAuthModal] = useState({ isOpen: false, mode: 'login' });
+  const [isNewUserSession, setIsNewUserSession] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return localStorage.getItem('isAuthenticated') === 'true';
   });
@@ -92,9 +93,11 @@ function App() {
   };
 
   const handleAuthSuccess = (userData) => {
-    setUser(userData);
+    const { isNewUser = false, ...safeUserData } = userData;
+    setUser(safeUserData);
+    setIsNewUserSession(Boolean(isNewUser));
     setIsAuthenticated(true);
-    localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('user', JSON.stringify(safeUserData));
     localStorage.setItem('isAuthenticated', 'true');
     closeAuthModal();
   };
@@ -107,9 +110,12 @@ function App() {
 
   const handleLogout = () => {
     setUser(null);
+    setIsNewUserSession(false);
     setIsAuthenticated(false);
     localStorage.removeItem('user');
     localStorage.removeItem('isAuthenticated');
+    window.history.pushState(null, '', '/');
+    window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
   return (
@@ -139,7 +145,7 @@ function App() {
               `}
             </style>
             {isAuthenticated && user ? (
-              <DashboardPage user={user} onLogout={handleLogout} onUpdateUser={handleUpdateUser} />
+              <DashboardPage user={user} onLogout={handleLogout} onUpdateUser={handleUpdateUser} isNewUserSession={isNewUserSession} />
             ) : (
               <>
                 <LandingPage onLoginClick={() => openAuthModal('login')} onSignUpClick={() => openAuthModal('signup')} />

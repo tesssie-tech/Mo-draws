@@ -349,20 +349,22 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
       </section>
 
       {/* About the Creator Section */}
-      <section id="creator" style={{ padding: isMobile ? '30px 20px' : '50px', backgroundColor: 'black', display: 'flex', justifyContent: 'center' }}>
-        <div style={{ display: 'flex', maxWidth: '800px', alignItems: 'center', flexWrap: 'wrap', flexDirection: isMobile ? 'column' : 'row' }}>
-          <div style={{ flex: '1', minWidth: isMobile ? '100%' : '250px', padding: isMobile ? '10px' : '20px', textAlign: 'center' }}>
-            <img 
-              src="img/Princess.png" 
-              alt="The Creator" 
-              style={{ width: isMobile ? '200px' : '250px', height: isMobile ? '200px' : '250px', objectFit: 'cover', borderRadius: isMobile ? '50%' : '0' }} 
-            />
-          </div>
-          <div style={{ flex: '2', minWidth: isMobile ? '100%' : '300px', padding: isMobile ? '10px' : '20px', textAlign: isMobile ? 'center' : 'left' }}>
+      <section id="creator" style={{ padding: isMobile ? '30px 20px' : '50px', backgroundColor: 'black' }}>
+        <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: isMobile ? '20px' : '40px' }}>
+          <div style={{ flex: '1', minWidth: isMobile ? '100%' : '300px', textAlign: isMobile ? 'center' : 'left' }}>
             <h2 style={{ fontSize: isMobile ? '1.8em' : '2em' }}>About the Creator</h2>
             <p>
               Hello! I'm the creator of Mo-Draws. As a passionate digital artist/developer myself, I wanted to build a platform that truly understands the needs of creators. Mo-Draws was born out of the desire to have a seamless, beautiful, and organized space to store and showcase illustrations. My mission is to empower artists worldwide to share their vision and connect with others who appreciate digital art.
             </p>
+          </div>
+          <div style={{ flex: '1.5', minWidth: isMobile ? '100%' : '350px', display: 'flex', justifyContent: 'center' }}>
+            <div style={{ borderRadius: '10px', overflow: 'hidden', border: '2px solid #857AFF', width: isMobile ? '220px' : '320px', height: isMobile ? '220px' : '320px' }}>
+              <img
+                src="img/Princess.png"
+                alt="The Creator"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              />
+            </div>
           </div>
         </div>
       </section>

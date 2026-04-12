@@ -18,11 +18,16 @@ Mo-Draws is a digital illustration platform designed for artists to share their 
 
 ## ✨ Features
 
-- **Landing Page**: Welcoming hero section with FAQ section
-- **User Authentication**: Sign up and login pages for secure user accounts
-- **Modern UI Design**: Dark-themed interface with vibrant neon accent colors
-- **Responsive Navigation**: Interactive header with dropdown menus
-- **Artist Showcase**: Dedicated space for displaying digital illustrations
+- **Landing Experience**: Hero, FAQ, and direct routing into the app
+- **Authentication Flow**: Sign up, login, verification modal, and auth modal states
+- **Artist Dashboard**: Multi-section workspace for dashboard, for-you feed, gallery, favorites, followers, messages, and settings
+- **Dynamic Notifications**: Notifications generated from real app activity (followers, likes, comments) with read and clear behavior
+- **Upload Management**: Upload artworks with category and visibility options (public/private)
+- **Portfolio Integration**: Optional add-to-portfolio during upload with data persistence
+- **Accurate Analytics**: Views, followers, and following values calculated from live state
+- **Category Deep Links**: Footer "Find Talent" links open the "For You" page with matching filters
+- **Route Transition Loading**: Short loading animation during page/section navigation
+- **Responsive UI**: Mobile and desktop layouts with consistent navigation behavior
 
 ## 🛠️ Tech Stack
 
@@ -102,11 +107,20 @@ mo-draws/
 │   ├── robots.txt           # SEO robots configuration
 │   └── img/                 # Static images
 ├── src/
-│   ├── App.js               # Main application component
+│   ├── App.js               # App routes and top-level transition loading
 │   ├── App.css              # Main app styles
-│   ├── LandingPage.js       # Landing page with hero section and FAQ
+│   ├── LandingPage.js       # Public landing page
+│   ├── DashboardPage.js     # Main authenticated app experience
+│   ├── BuildPortfolioPage.js# Portfolio builder/editor
+│   ├── AboutUsPage.js       # About page
+│   ├── CareersPage.js       # Careers page
+│   ├── GuidelinesPage.js    # Community guidelines page
+│   ├── HelpCentrePage.js    # Help centre page
+│   ├── OurTeamPage.js       # Team page
 │   ├── LoginPage.js         # User login interface
 │   ├── SignUpPage.js        # User registration interface
+│   ├── AuthModal.js         # Authentication modal workflow
+│   ├── VerificationModal.js # Verification modal workflow
 │   ├── index.js             # React entry point
 │   ├── index.css            # Global styles
 │   └── img/                 # Local image assets
@@ -141,7 +155,7 @@ mo-draws/
 | Command | Description |
 |---------|-------------|
 | `npm start` | Runs development server on port 3000 |
-| `npm build` | Creates optimized production build |
+| `npm run build` | Creates optimized production build |
 | `npm test` | Launches test runner in interactive mode |
 | `npm eject` | Exposes webpack configuration (irreversible) |
 | `npm run deploy` | Deploys to GitHub Pages |

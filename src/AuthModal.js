@@ -124,7 +124,7 @@ const AuthModal = ({ isOpen, onClose, mode, onAuthSuccess }) => {
     resetForm();
     setShowVerification(false);
     setTimeout(() => {
-      onAuthSuccess({ name: signupName, email: signupEmail });
+      onAuthSuccess({ name: signupName, email: signupEmail, isNewUser: true });
     }, 2000); // Allow time for toast notification to be read before unmounting the modal
   };
 
