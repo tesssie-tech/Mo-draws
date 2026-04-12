@@ -62,7 +62,7 @@ const FAQItem = ({ question, answer }) => {
   );
 };
 
-const FooterLink = ({ href, children }) => {
+const FooterLink = ({ href, children, category }) => {
   const handleClick = (e) => {
     if (href.startsWith('#') && href !== '#') {
       e.preventDefault();
@@ -73,7 +73,8 @@ const FooterLink = ({ href, children }) => {
     } else if (href.startsWith('/')) {
       // Prevent full page reload and trigger SPA routing for local pages
       e.preventDefault();
-      window.history.pushState(null, '', href);
+      const url = category ? `${href}?category=${encodeURIComponent(category)}` : href;
+      window.history.pushState(null, '', url);
       window.dispatchEvent(new PopStateEvent('popstate'));
     }
   };
@@ -464,8 +465,8 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
           <div style={{ flex: '1', minWidth: '150px', marginBottom: isMobile ? '10px' : '20px' }}>
             <h4 style={{ color: '#45FFEF', marginBottom: '15px' }}>Built For Creatives</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: isMobile ? 'center' : 'flex-start' }}>
-              <FooterLink href="#features">Upload Art</FooterLink>
-              <FooterLink href="#features">Build Portfolio</FooterLink>
+              <FooterLink href="/dashboard">Upload Art</FooterLink>
+              <FooterLink href="/build-portfolio">Build Portfolio</FooterLink>
               <FooterLink href="#about">Join Community</FooterLink>
             </div>
           </div>
@@ -474,11 +475,11 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
           <div style={{ flex: '1', minWidth: '150px', marginBottom: isMobile ? '10px' : '20px' }}>
             <h4 style={{ color: '#45FFEF', marginBottom: '15px' }}>Find Talent</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: isMobile ? 'center' : 'flex-start' }}>
-              <FooterLink href="#hero">Illustrations</FooterLink>
-              <FooterLink href="#hero">Concept Arts</FooterLink>
-              <FooterLink href="#hero">Animations</FooterLink>
-              <FooterLink href="#hero">Video Edits</FooterLink>
-              <FooterLink href="#hero">Graphic Designs</FooterLink>
+              <FooterLink href="/for-you" category="Illustrations">Illustrations</FooterLink>
+              <FooterLink href="/for-you" category="Concept Arts">Concept Arts</FooterLink>
+              <FooterLink href="/for-you" category="Animations">Animations</FooterLink>
+              <FooterLink href="/for-you" category="Video Edits">Video Edits</FooterLink>
+              <FooterLink href="/for-you" category="Graphic Designs">Graphic Designs</FooterLink>
             </div>
           </div>
 
@@ -487,10 +488,10 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
             <h4 style={{ color: '#45FFEF', marginBottom: '15px' }}>Mo-Draws</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: isMobile ? 'center' : 'flex-start' }}>
               <FooterLink href="/aboutuspage">About Us</FooterLink>
-              <FooterLink href="#features">Careers</FooterLink>
-              <FooterLink href="#faq">Guidelines</FooterLink>
-              <FooterLink href="#faq">Help centre</FooterLink>
-              <FooterLink href="#creator">Our Team</FooterLink>
+              <FooterLink href="/careers">Careers</FooterLink>
+              <FooterLink href="/guidelines">Guidelines</FooterLink>
+              <FooterLink href="/help-centre">Help centre</FooterLink>
+              <FooterLink href="/our-team">Our Team</FooterLink>
             </div>
           </div>
         

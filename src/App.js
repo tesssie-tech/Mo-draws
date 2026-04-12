@@ -1,10 +1,63 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import LandingPage from './LandingPage';
 import DashboardPage from './DashboardPage';
 import AboutUsPage from './AboutUsPage';
+import CareersPage from './CareersPage';
+import BuildPortfolioPage from './BuildPortfolioPage';
+import GuidelinesPage from './GuidelinesPage';
+import HelpCentrePage from './HelpCentrePage';
+import OurTeamPage from './OurTeamPage';
 import AuthModal from './AuthModal';
 import './App.css';
+
+function RouteTransitionLoader() {
+  const location = useLocation();
+  const [isRouteLoading, setIsRouteLoading] = useState(false);
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    setIsRouteLoading(true);
+    const timer = setTimeout(() => setIsRouteLoading(false), 320);
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
+
+  if (!isRouteLoading) return null;
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.45)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 9999,
+        backdropFilter: 'blur(2px)'
+      }}
+    >
+      <div
+        style={{
+          width: '34px',
+          height: '34px',
+          border: '3px solid rgba(255, 255, 255, 0.28)',
+          borderTopColor: '#45FFFF',
+          borderRadius: '50%',
+          animation: 'appRouteSpin 0.8s linear infinite'
+        }}
+      />
+      <style>
+        {`@keyframes appRouteSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}
+      </style>
+    </div>
+  );
+}
 
 function App() {
   const [authModal, setAuthModal] = useState({ isOpen: false, mode: 'login' });
@@ -61,15 +114,14 @@ function App() {
 
   return (
     <BrowserRouter>
+      <RouteTransitionLoader />
       <Routes>
         <Route path="*" element={
           <div className="App">
             <style>
               {`
-                @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Varela+Round&display=swap');
-                
-                body, input, p, a, div {
-                  font-family: 'Varela Round', sans-serif;
+                body, input, p, a, div, button, h1, h2, h3 {
+                  font-family: 'Manrope', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
                 }
 
                 p {
@@ -77,13 +129,11 @@ function App() {
                 }
 
                 button {
-                  font-family: 'Varela Round', sans-serif;
                   font-weight: bold;
                   letter-spacing: 1px;
                 }
 
                 h1, h2, h3 {
-                  font-family: 'Fredoka', sans-serif;
                   color: #FF006B;
                 }
               `}
@@ -99,6 +149,11 @@ function App() {
           </div>
         } />
         <Route path="/aboutuspage" element={<AboutUsPage />} />
+        <Route path="/careers" element={<CareersPage />} />
+        <Route path="/build-portfolio" element={<BuildPortfolioPage />} />
+        <Route path="/guidelines" element={<GuidelinesPage />} />
+        <Route path="/help-centre" element={<HelpCentrePage />} />
+        <Route path="/our-team" element={<OurTeamPage />} />
       </Routes>
     </BrowserRouter>
   );
