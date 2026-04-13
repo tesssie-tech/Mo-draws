@@ -94,6 +94,9 @@ function App() {
 
   const handleAuthSuccess = (userData) => {
     const { isNewUser = false, ...safeUserData } = userData;
+    if (isNewUser) {
+      localStorage.removeItem('userAvatar');
+    }
     setUser(safeUserData);
     setIsNewUserSession(Boolean(isNewUser));
     setIsAuthenticated(true);

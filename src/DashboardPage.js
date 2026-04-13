@@ -201,6 +201,22 @@ const saveUploadedArtworksToDb = async (items) => {
   });
 };
 
+const clearUploadedArtworksStorage = async () => {
+  localStorage.removeItem('uploadedArtworks');
+  localStorage.removeItem('uploadedArtworksMeta');
+
+  if (!window.indexedDB) {
+    return;
+  }
+
+  await new Promise((resolve) => {
+    const request = window.indexedDB.deleteDatabase(DASHBOARD_UPLOAD_DB_NAME);
+    request.onsuccess = () => resolve();
+    request.onerror = () => resolve();
+    request.onblocked = () => resolve();
+  });
+};
+
 const PORTFOLIO_DB_NAME = 'mo-draws-portfolio-db';
 const PORTFOLIO_STORE_NAME = 'portfolio';
 const PORTFOLIO_RECORD_KEY = 'items';
@@ -485,28 +501,7 @@ const DashboardPage = ({ user, onLogout, onUpdateUser, isNewUserSession = false 
   const [artworkTitle, setArtworkTitle] = useState('');
   const [artworkCategory, setArtworkCategory] = useState('Illustrations');
   const [addToPortfolio, setAddToPortfolio] = useState(false);
-  const [uploadedArtworks, setUploadedArtworks] = useState([
-    {
-      id: 1,
-      title: 'Digital Illustration 1',
-      thumbnail: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?auto=format&fit=crop&w=300&q=80',
-      date: 'Mar 20, 2026',
-      category: 'Illustrations',
-      visibility: 'Public',
-      views: '1.2K',
-      likes: '342'
-    },
-    {
-      id: 2,
-      title: 'Character Design',
-      thumbnail: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?auto=format&fit=crop&w=300&q=80',
-      date: 'Mar 18, 2026',
-      category: 'Concept Arts',
-      visibility: 'Private',
-      views: '856',
-      likes: '124'
-    }
-  ]);
+  const [uploadedArtworks, setUploadedArtworks] = useState([]);
   const [uploadedArtworksLoaded, setUploadedArtworksLoaded] = useState(false);
   
   const [favoriteArtworks, setFavoriteArtworks] = useLocalStorage('favoriteArtworks', [
@@ -769,7 +764,7 @@ const DashboardPage = ({ user, onLogout, onUpdateUser, isNewUserSession = false 
     bio: localStorage.getItem('userBio') || 'Digital artist exploring neon colors and cyberpunk themes. Available for freelance work.',
     portfolio: localStorage.getItem('userPortfolio') || 'https://my-awesome-art.com'
   });
-  const [avatar, setAvatar] = useLocalStorage('userAvatar', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80', false);
+  const [avatar, setAvatar] = useLocalStorage('userAvatar', '', false);
   // State for favorites pagination
   const [displayCountFavorites, setDisplayCountFavorites] = useState(ARTWORKS_PER_PAGE);
   const [displayCountFollowers, setDisplayCountFollowers] = useState(ARTWORKS_PER_PAGE);
@@ -874,6 +869,14 @@ const DashboardPage = ({ user, onLogout, onUpdateUser, isNewUserSession = false 
 
     const loadUploadedArtworks = async () => {
       try {
+        if (isNewUserSession) {
+          await clearUploadedArtworksStorage();
+          if (!isCancelled) {
+            setUploadedArtworks([]);
+          }
+          return;
+        }
+
         const dbItems = await getUploadedArtworksFromDb();
         if (isCancelled) return;
 
@@ -910,7 +913,7 @@ const DashboardPage = ({ user, onLogout, onUpdateUser, isNewUserSession = false 
     return () => {
       isCancelled = true;
     };
-  }, []);
+  }, [isNewUserSession]);
 
   useEffect(() => {
     if (!uploadedArtworksLoaded) return;
@@ -1150,6 +1153,24 @@ const DashboardPage = ({ user, onLogout, onUpdateUser, isNewUserSession = false 
     art.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
     art.author.toLowerCase().includes(searchQuery.toLowerCase())
   ));
+
+  const filteredForYouArtworks = filteredRecommendedArtworks.filter((art) =>
+    activeCategoryFilter === 'All' ||
+    art.category === activeCategoryFilter ||
+    (!art.category && activeCategoryFilter === 'Illustrations')
+  );
+
+  const filteredGalleryArtworks = filteredUploadedArtworks.filter((art) =>
+    activeCategoryFilter === 'All' ||
+    art.category === activeCategoryFilter ||
+    (!art.category && activeCategoryFilter === 'Illustrations')
+  );
+
+  const filteredFavoritesByCategory = filteredFavoriteArtworks.filter((art) =>
+    activeCategoryFilter === 'All' ||
+    art.category === activeCategoryFilter ||
+    (!art.category && activeCategoryFilter === 'Illustrations')
+  );
 
   const totalUploadedViews = uploadedArtworks.reduce((total, artwork) => total + parseCount(artwork.views), 0);
   const followerCount = followersList.length;
@@ -1522,12 +1543,18 @@ const DashboardPage = ({ user, onLogout, onUpdateUser, isNewUserSession = false 
     animation: isFiltering ? 'skeletonPulse 0.8s infinite alternate ease-in-out' : 'none'
   };
 
-  const categoriesToRender = activeCategoryFilter === 'All' 
-    ? ['Illustrations', 'Concept Arts', 'Animations', 'Video Edits', 'Graphic Designs'] 
-    : [activeCategoryFilter];
-
-  const renderCategoryFilters = () => (
-    <div className="hide-scrollbar" style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px', marginBottom: '20px' }}>
+  const renderCategoryFilters = ({ wrapOnMobile = false } = {}) => (
+    <div
+      className="hide-scrollbar"
+      style={{
+        display: 'flex',
+        gap: '10px',
+        overflowX: wrapOnMobile && isMobile ? 'visible' : 'auto',
+        flexWrap: wrapOnMobile && isMobile ? 'wrap' : 'nowrap',
+        paddingBottom: '10px',
+        marginBottom: '20px'
+      }}
+    >
       {['All', 'Illustrations', 'Concept Arts', 'Animations', 'Video Edits', 'Graphic Designs'].map(category => (
         <button
           key={category}
@@ -1538,14 +1565,14 @@ const DashboardPage = ({ user, onLogout, onUpdateUser, isNewUserSession = false 
             setDisplayCountFavorites(ARTWORKS_PER_PAGE);
           }}
           style={{
-            padding: '8px 16px',
+            padding: isMobile ? '8px 12px' : '8px 16px',
             borderRadius: '20px',
             border: activeCategoryFilter === category ? `1px solid ${accentColor}` : '1px solid #333',
             backgroundColor: activeCategoryFilter === category ? `${accentColor}33` : '#1a1a1a',
             color: activeCategoryFilter === category ? '#fff' : '#ccc',
             cursor: 'pointer',
             transition: 'all 0.2s ease',
-            fontSize: '14px',
+            fontSize: isMobile ? '12px' : '14px',
             whiteSpace: 'nowrap'
           }}
           onMouseEnter={(e) => {
@@ -2129,7 +2156,7 @@ const DashboardPage = ({ user, onLogout, onUpdateUser, isNewUserSession = false 
                 onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} 
                 onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
               >
-                <img src={avatar} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                {avatar && <img src={avatar} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
               </div>
               
               {/* Dropdown Menu */}
@@ -2441,42 +2468,30 @@ const DashboardPage = ({ user, onLogout, onUpdateUser, isNewUserSession = false 
               <h2 style={{ fontSize: isMobile ? '2em' : '2.5em', marginBottom: '10px' }}>For You</h2>
               <p style={{ color: '#ccc', marginBottom: '20px' }}>Discover new artists and trending artworks tailored to your taste.</p>
               
-              {renderCategoryFilters()}
+              {renderCategoryFilters({ wrapOnMobile: true })}
 
-              {filteredRecommendedArtworks.filter(art => activeCategoryFilter === 'All' || art.category === activeCategoryFilter || (!art.category && activeCategoryFilter === 'Illustrations')).length === 0 ? (
+              {filteredForYouArtworks.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '60px 20px', backgroundColor: '#1a1a1a', borderRadius: '15px', border: '1px dashed #333', marginTop: '20px' }}>
                   <p style={{ color: '#ccc', fontSize: '1.2em', margin: 0 }}>No artworks found matching your criteria.</p>
                 </div>
               ) : (
                 <>
-                  {categoriesToRender.map(category => {
-                    const categoryArtworks = filteredRecommendedArtworks.filter(art => art.category === category || (!art.category && category === 'Illustrations'));
-                    if (categoryArtworks.length === 0) return null;
-                    
-                    return (
-                      <div key={category} style={{ marginBottom: '50px' }}>
-                        <h3 style={{ color: '#45FFEF', fontSize: '1.5em', marginBottom: '20px', borderBottom: '1px solid #333', paddingBottom: '10px' }}>{category}</h3>
-                        <MasonryGrid isMobile={isMobile} gridSize={gridSize} style={filterTransitionStyles}>
-                          {categoryArtworks.slice(0, displayCountForYou).map((artwork) => (
-                            <ArtworkCard
-                              key={`foryou-${artwork.id}`}
-                              artwork={artwork}
-                              onClick={handleArtworkClick}
-                              onToggleFavorite={toggleFavorite}
-                              isFavorite={favoriteArtworks.some(art => art.id === artwork.id)}
-                              onAuthorClick={setViewingUserProfile}
-                              type="foryou"
-                            />
-                          ))}
-                        </MasonryGrid>
-                      </div>
-                    );
-                  })}
+                  <MasonryGrid isMobile={isMobile} gridSize={gridSize} style={filterTransitionStyles}>
+                    {filteredForYouArtworks.slice(0, displayCountForYou).map((artwork) => (
+                      <ArtworkCard
+                        key={`foryou-${artwork.id}`}
+                        artwork={artwork}
+                        onClick={handleArtworkClick}
+                        onToggleFavorite={toggleFavorite}
+                        isFavorite={favoriteArtworks.some(art => art.id === artwork.id)}
+                        onAuthorClick={setViewingUserProfile}
+                        type="foryou"
+                      />
+                    ))}
+                  </MasonryGrid>
                   
                   <InfiniteScrollTrigger 
-                    hasMore={categoriesToRender.some(category => 
-                      filteredRecommendedArtworks.filter(art => art.category === category || (!art.category && category === 'Illustrations')).length > displayCountForYou
-                    )} 
+                    hasMore={displayCountForYou < filteredForYouArtworks.length}
                     onLoadMore={() => setDisplayCountForYou(prev => prev + ARTWORKS_PER_PAGE)} 
                   />
                 </>
@@ -2490,10 +2505,10 @@ const DashboardPage = ({ user, onLogout, onUpdateUser, isNewUserSession = false 
               <h2 style={{ fontSize: isMobile ? '2em' : '2.5em', marginBottom: '10px' }}>My Gallery</h2>
               <p style={{ color: '#ccc', marginBottom: '20px' }}>All your stored artworks, beautifully organized.</p>
               
-              {renderCategoryFilters()}
+              {renderCategoryFilters({ wrapOnMobile: true })}
 
               {/* Visibility Filters */}
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
                 {['All', 'Public', 'Private'].map(vis => (
                   <button
                     key={vis}
@@ -2502,10 +2517,10 @@ const DashboardPage = ({ user, onLogout, onUpdateUser, isNewUserSession = false 
                       backgroundColor: visibilityFilter === vis ? '#857AFF' : 'transparent',
                       color: visibilityFilter === vis ? 'white' : '#ccc',
                       border: `1px solid ${visibilityFilter === vis ? '#857AFF' : '#333'}`,
-                      padding: '6px 15px',
+                      padding: isMobile ? '6px 12px' : '6px 15px',
                       borderRadius: '15px',
                       cursor: 'pointer',
-                      fontSize: '12px',
+                      fontSize: isMobile ? '11px' : '12px',
                       fontWeight: 'bold',
                       transition: 'all 0.2s ease'
                     }}
@@ -2515,43 +2530,31 @@ const DashboardPage = ({ user, onLogout, onUpdateUser, isNewUserSession = false 
                 ))}
               </div>
 
-              {filteredUploadedArtworks.filter(art => activeCategoryFilter === 'All' || art.category === activeCategoryFilter || (!art.category && activeCategoryFilter === 'Illustrations')).length === 0 ? (
+              {filteredGalleryArtworks.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '60px 20px', backgroundColor: '#1a1a1a', borderRadius: '15px', border: '1px dashed #333', marginTop: '20px' }}>
                   <p style={{ color: '#ccc', fontSize: '1.2em', margin: 0 }}>No artworks found matching your criteria.</p>
                 </div>
               ) : (
                 <>
-                  {categoriesToRender.map(category => {
-                    const categoryArtworks = filteredUploadedArtworks.filter(art => art.category === category || (!art.category && category === 'Illustrations'));
-                    if (categoryArtworks.length === 0) return null;
-                    
-                    return (
-                      <div key={category} style={{ marginBottom: '50px' }}>
-                        <h3 style={{ color: '#45FFEF', fontSize: '1.5em', marginBottom: '20px', borderBottom: '1px solid #333', paddingBottom: '10px' }}>{category}</h3>
-                        <MasonryGrid isMobile={isMobile} gridSize={gridSize} style={filterTransitionStyles}>
-                          {categoryArtworks.slice(0, displayCountGallery).map((artwork) => (
-                            <ArtworkCard
-                              key={`gallery-${artwork.id}`}
-                              artwork={artwork}
-                              onClick={handleArtworkClick}
-                              onEdit={handleEditArtworkTitle}
-                              onDelete={handleDeleteArtwork}
-                              type="gallery"
-                              draggable={true}
-                              onDragStart={(e) => handleDragStart(e, artwork.id)}
-                              onDragOver={handleDragOver}
-                              onDrop={(e) => handleDrop(e, artwork.id)}
-                            />
-                          ))}
-                        </MasonryGrid>
-                      </div>
-                    );
-                  })}
+                  <MasonryGrid isMobile={isMobile} gridSize={gridSize} style={filterTransitionStyles}>
+                    {filteredGalleryArtworks.slice(0, displayCountGallery).map((artwork) => (
+                      <ArtworkCard
+                        key={`gallery-${artwork.id}`}
+                        artwork={artwork}
+                        onClick={handleArtworkClick}
+                        onEdit={handleEditArtworkTitle}
+                        onDelete={handleDeleteArtwork}
+                        type="gallery"
+                        draggable={true}
+                        onDragStart={(e) => handleDragStart(e, artwork.id)}
+                        onDragOver={handleDragOver}
+                        onDrop={(e) => handleDrop(e, artwork.id)}
+                      />
+                    ))}
+                  </MasonryGrid>
                   
                   <InfiniteScrollTrigger 
-                    hasMore={categoriesToRender.some(category => 
-                      filteredUploadedArtworks.filter(art => art.category === category || (!art.category && category === 'Illustrations')).length > displayCountGallery
-                    )} 
+                    hasMore={displayCountGallery < filteredGalleryArtworks.length}
                     onLoadMore={() => setDisplayCountGallery(prev => prev + ARTWORKS_PER_PAGE)} 
                   />
                 </>
@@ -2583,7 +2586,7 @@ const DashboardPage = ({ user, onLogout, onUpdateUser, isNewUserSession = false 
                     onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
                     title="Click to change avatar"
                   >
-                    <img src={avatar} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    {avatar && <img src={avatar} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
                     <input 
                       id="avatar-upload"
                       type="file" 
@@ -2764,40 +2767,28 @@ const DashboardPage = ({ user, onLogout, onUpdateUser, isNewUserSession = false 
               <h2 style={{ fontSize: isMobile ? '2em' : '2.5em', marginBottom: '10px' }}>Favorites</h2>
               <p style={{ color: '#ccc', marginBottom: '20px' }}>Artworks from other creators that inspire you.</p>
               
-              {renderCategoryFilters()}
+              {renderCategoryFilters({ wrapOnMobile: true })}
 
-              {filteredFavoriteArtworks.filter(art => activeCategoryFilter === 'All' || art.category === activeCategoryFilter || (!art.category && activeCategoryFilter === 'Illustrations')).length === 0 ? (
+              {filteredFavoritesByCategory.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '60px 20px', backgroundColor: '#1a1a1a', borderRadius: '15px', border: '1px dashed #333', marginTop: '20px' }}>
                   <p style={{ color: '#ccc', fontSize: '1.2em', margin: 0 }}>No artworks found matching your criteria.</p>
                 </div>
               ) : (
                 <>
-                  {categoriesToRender.map(category => {
-                    const categoryArtworks = filteredFavoriteArtworks.filter(art => art.category === category || (!art.category && category === 'Illustrations'));
-                    if (categoryArtworks.length === 0) return null;
-                    
-                    return (
-                      <div key={category} style={{ marginBottom: '50px' }}>
-                        <h3 style={{ color: '#45FFEF', fontSize: '1.5em', marginBottom: '20px', borderBottom: '1px solid #333', paddingBottom: '10px' }}>{category}</h3>
-                        <MasonryGrid isMobile={isMobile} gridSize={gridSize} style={filterTransitionStyles}>
-                          {categoryArtworks.slice(0, displayCountFavorites).map((artwork) => (
-                            <ArtworkCard
-                              key={`fav-${artwork.id}`}
-                              artwork={artwork}
-                              onClick={handleArtworkClick}
-                              onAuthorClick={setViewingUserProfile}
-                              type="favorite"
-                            />
-                          ))}
-                        </MasonryGrid>
-                      </div>
-                    );
-                  })}
+                  <MasonryGrid isMobile={isMobile} gridSize={gridSize} style={filterTransitionStyles}>
+                    {filteredFavoritesByCategory.slice(0, displayCountFavorites).map((artwork) => (
+                      <ArtworkCard
+                        key={`fav-${artwork.id}`}
+                        artwork={artwork}
+                        onClick={handleArtworkClick}
+                        onAuthorClick={setViewingUserProfile}
+                        type="favorite"
+                      />
+                    ))}
+                  </MasonryGrid>
                   
                   <InfiniteScrollTrigger 
-                    hasMore={categoriesToRender.some(category => 
-                      filteredFavoriteArtworks.filter(art => art.category === category || (!art.category && category === 'Illustrations')).length > displayCountFavorites
-                    )} 
+                    hasMore={displayCountFavorites < filteredFavoritesByCategory.length}
                     onLoadMore={() => setDisplayCountFavorites(prev => prev + ARTWORKS_PER_PAGE)} 
                   />
                 </>
@@ -3422,16 +3413,106 @@ const DashboardPage = ({ user, onLogout, onUpdateUser, isNewUserSession = false 
             {/* 5. Social Media */}
             <div style={{ flex: '1', minWidth: '150px', marginBottom: isMobile ? '10px' : '20px' }}>
               <h4 style={{ color: '#45FFEF', marginBottom: '15px' }}>Follow Us</h4>
-              <div style={{ display: 'flex', gap: '15px', justifyContent: isMobile ? 'center' : 'flex-start' }}>
-                <a href="#" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#45FFFF', textDecoration: 'none', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = 'white'} onMouseLeave={(e) => e.target.style.color = '#45FFFF'}>
-                  <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 448 512" height="1.5em" width="1.5em" xmlns="http://www.w3.org/2000/svg"><path d="M448 209.91a210.06 210.06 0 0 1-122.77-39.25V349.38A162.55 162.55 0 1 1 185 188.31V278.2a74.62 74.62 0 1 0 52.23 50.85V0h88a148.62 148.62 0 0 0 148.62 148.62z"></path></svg>
-                </a>
-                <a href="#" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#45FFFF', textDecoration: 'none', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = 'white'} onMouseLeave={(e) => e.target.style.color = '#45FFFF'}>
-                  <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 448 512" height="1.5em" width="1.5em" xmlns="http://www.w3.org/2000/svg"><path d="M224.1 141c-63.6 0-114.9 51.3-114.9 114.9s51.3 114.9 114.9 114.9S339 319.5 339 255.9 287.7 141 224.1 141zm0 189.6c-41.1 0-74.7-33.5-74.7-74.7s33.5-74.7 74.7-74.7 74.7 33.5 74.7 74.7-33.6 74.7-74.7 74.7zm146.4-194.3c0 14.9-12 26.8-26.8 26.8-14.9 0-26.8-12-26.8-26.8s12-26.8 26.8-26.8 26.8 12 26.8 26.8zm76.1 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM398.8 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"></path></svg>
-                </a>
-                <a href="#" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#45FFFF', textDecoration: 'none', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e) => e.target.style.color = 'white'} onMouseLeave={(e) => e.target.style.color = '#45FFFF'}>
-                  <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 24 24" height="1.5em" width="1.5em" xmlns="http://www.w3.org/2000/svg"><path d="M13.46 6c.73-.12 1.45-.88 1.66-1.6.15-1.08-1.09-2-2.12-2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h8c1.03 0 2.27-.92 2.12-2-.21-.72-.93-1.48-1.66-1.6-.27-.04-.54-.04-.81-.04H8V6h5.46zM9 9h4v2H9V9zm4 4H9v2h4v-2z"></path></svg>
-                </a>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: isMobile ? 'center' : 'flex-start' }}>
+                <button
+                  type="button"
+                  aria-label="TikTok"
+                  onClick={() => showToast('TikTok link coming soon.')}
+                  style={{
+                    width: '42px',
+                    height: '42px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#45FFFF',
+                    background: 'linear-gradient(135deg, rgba(133,122,255,0.22), rgba(69,255,239,0.12))',
+                    border: '1px solid rgba(133,122,255,0.7)',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 6px 18px rgba(69,255,239,0.08)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = 'white';
+                    e.currentTarget.style.borderColor = '#45FFEF';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 10px 24px rgba(69,255,239,0.2)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = '#45FFFF';
+                    e.currentTarget.style.borderColor = 'rgba(133,122,255,0.7)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 6px 18px rgba(69,255,239,0.08)';
+                  }}
+                >
+                  <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 448 512" height="1.1em" width="1.1em" xmlns="http://www.w3.org/2000/svg"><path d="M448 209.91a210.06 210.06 0 0 1-122.77-39.25V349.38A162.55 162.55 0 1 1 185 188.31V278.2a74.62 74.62 0 1 0 52.23 50.85V0h88a148.62 148.62 0 0 0 148.62 148.62z"></path></svg>
+                </button>
+                <button
+                  type="button"
+                  aria-label="Instagram"
+                  onClick={() => showToast('Instagram link coming soon.')}
+                  style={{
+                    width: '42px',
+                    height: '42px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#45FFFF',
+                    background: 'linear-gradient(135deg, rgba(133,122,255,0.22), rgba(69,255,239,0.12))',
+                    border: '1px solid rgba(133,122,255,0.7)',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 6px 18px rgba(69,255,239,0.08)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = 'white';
+                    e.currentTarget.style.borderColor = '#45FFEF';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 10px 24px rgba(69,255,239,0.2)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = '#45FFFF';
+                    e.currentTarget.style.borderColor = 'rgba(133,122,255,0.7)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 6px 18px rgba(69,255,239,0.08)';
+                  }}
+                >
+                  <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 448 512" height="1.1em" width="1.1em" xmlns="http://www.w3.org/2000/svg"><path d="M224.1 141c-63.6 0-114.9 51.3-114.9 114.9s51.3 114.9 114.9 114.9S339 319.5 339 255.9 287.7 141 224.1 141zm0 189.6c-41.1 0-74.7-33.5-74.7-74.7s33.5-74.7 74.7-74.7 74.7 33.5 74.7 74.7-33.6 74.7-74.7 74.7zm146.4-194.3c0 14.9-12 26.8-26.8 26.8-14.9 0-26.8-12-26.8-26.8s12-26.8 26.8-26.8 26.8 12 26.8 26.8zm76.1 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM398.8 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"></path></svg>
+                </button>
+                <button
+                  type="button"
+                  aria-label="Design profile"
+                  onClick={() => showToast('Profile link coming soon.')}
+                  style={{
+                    width: '42px',
+                    height: '42px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#45FFFF',
+                    background: 'linear-gradient(135deg, rgba(133,122,255,0.22), rgba(69,255,239,0.12))',
+                    border: '1px solid rgba(133,122,255,0.7)',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 6px 18px rgba(69,255,239,0.08)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = 'white';
+                    e.currentTarget.style.borderColor = '#45FFEF';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 10px 24px rgba(69,255,239,0.2)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = '#45FFFF';
+                    e.currentTarget.style.borderColor = 'rgba(133,122,255,0.7)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 6px 18px rgba(69,255,239,0.08)';
+                  }}
+                >
+                  <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 24 24" height="1.1em" width="1.1em" xmlns="http://www.w3.org/2000/svg"><path d="M13.46 6c.73-.12 1.45-.88 1.66-1.6.15-1.08-1.09-2-2.12-2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h8c1.03 0 2.27-.92 2.12-2-.21-.72-.93-1.48-1.66-1.6-.27-.04-.54-.04-.81-.04H8V6h5.46zM9 9h4v2H9V9zm4 4H9v2h4v-2z"></path></svg>
+                </button>
               </div>
             </div>
 
