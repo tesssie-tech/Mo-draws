@@ -496,6 +496,26 @@ const ArtworkCard = ({
   );
 };
 
+const AvatarPlaceholder = ({ size = 42, iconSize = 20 }) => (
+  <div
+    style={{
+      width: `${size}px`,
+      height: `${size}px`,
+      borderRadius: '50%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'linear-gradient(135deg, rgba(133,122,255,0.28), rgba(69,255,239,0.16))',
+      color: '#e8f2ff'
+    }}
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+      <circle cx="12" cy="7" r="4"></circle>
+    </svg>
+  </div>
+);
+
 const DashboardPage = ({ user, onLogout, onUpdateUser, isNewUserSession = false }) => {
   const [previewImage, setPreviewImage] = useState(null);
   const [artworkTitle, setArtworkTitle] = useState('');
@@ -784,6 +804,45 @@ const DashboardPage = ({ user, onLogout, onUpdateUser, isNewUserSession = false 
     message: '',
     tips: []
   });
+  const [isProfilePhotoModalOpen, setIsProfilePhotoModalOpen] = useState(false);
+  const AVATAR_UPLOAD_INPUT_ID = 'avatar-upload';
+
+  const openAvatarPicker = () => {
+    document.getElementById(AVATAR_UPLOAD_INPUT_ID)?.click();
+  };
+
+  const handleAvatarFileChange = (e) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_SIZE = 300;
+        let { width, height } = img;
+
+        if (width > height && width > MAX_SIZE) {
+          height *= MAX_SIZE / width;
+          width = MAX_SIZE;
+        } else if (height > MAX_SIZE) {
+          width *= MAX_SIZE / height;
+          height = MAX_SIZE;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        setAvatar(canvas.toDataURL('image/jpeg', 0.7));
+        showToast('Profile photo updated successfully.');
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(e.target.files[0]);
+    e.target.value = '';
+  };
 
   const helpContentByNav = useMemo(() => ({
     dashboard: {
@@ -2156,7 +2215,11 @@ const DashboardPage = ({ user, onLogout, onUpdateUser, isNewUserSession = false 
                 onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} 
                 onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
               >
-                {avatar && <img src={avatar} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+                {avatar ? (
+                  <img src={avatar} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                ) : (
+                  <AvatarPlaceholder size={42} iconSize={18} />
+                )}
               </div>
               
               {/* Dropdown Menu */}
@@ -2580,49 +2643,23 @@ const DashboardPage = ({ user, onLogout, onUpdateUser, isNewUserSession = false 
                 {/* Avatar and Basic Info */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '30px', flexWrap: 'wrap' }}>
                   <div 
-                    onClick={() => document.getElementById('avatar-upload').click()}
+                    onClick={() => setIsProfilePhotoModalOpen(true)}
                     style={{ width: '120px', height: '120px', borderRadius: '50%', border: '3px solid #45FFEF', overflow: 'hidden', cursor: 'pointer', transition: 'opacity 0.2s' }}
                     onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
                     onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-                    title="Click to change avatar"
+                    title="Tap to view profile photo"
                   >
-                    {avatar && <img src={avatar} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+                    {avatar ? (
+                      <img src={avatar} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    ) : (
+                      <AvatarPlaceholder size={120} iconSize={44} />
+                    )}
                     <input 
-                      id="avatar-upload"
+                      id={AVATAR_UPLOAD_INPUT_ID}
                       type="file" 
                       accept="image/png, image/jpeg, image/gif" 
                       style={{ display: 'none' }} 
-                      onChange={(e) => {
-                        if (e.target.files && e.target.files.length > 0) {
-                          const reader = new FileReader();
-                          reader.onload = (event) => {
-                            const img = new Image();
-                            img.onload = () => {
-                              const canvas = document.createElement('canvas');
-                              const MAX_SIZE = 300;
-                              let { width, height } = img;
-                              
-                              if (width > height && width > MAX_SIZE) {
-                                height *= MAX_SIZE / width;
-                                width = MAX_SIZE;
-                              } else if (height > MAX_SIZE) {
-                                width *= MAX_SIZE / height;
-                                height = MAX_SIZE;
-                              }
-                              
-                              canvas.width = width;
-                              canvas.height = height;
-                              const ctx = canvas.getContext('2d');
-                              ctx.drawImage(img, 0, 0, width, height);
-                              
-                              // Convert back to base64 as a JPEG with 70% quality
-                              setAvatar(canvas.toDataURL('image/jpeg', 0.7));
-                            };
-                            img.src = event.target.result;
-                          };
-                          reader.readAsDataURL(e.target.files[0]);
-                        }
-                      }}
+                      onChange={handleAvatarFileChange}
                     />
                   </div>
                   <div>
@@ -4062,6 +4099,85 @@ const DashboardPage = ({ user, onLogout, onUpdateUser, isNewUserSession = false 
                 onMouseLeave={(e) => { e.target.style.backgroundColor = 'transparent'; e.target.style.color = '#ccc'; }}
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Light Profile Photo Modal */}
+      {isProfilePhotoModalOpen && (
+        <div
+          onClick={() => setIsProfilePhotoModalOpen(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.45)',
+            zIndex: 1798,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '20px',
+            animation: 'backdropFadeIn 0.2s ease forwards'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: '#f8fafc',
+              border: `1px solid ${accentColor}`,
+              borderRadius: '14px',
+              padding: isMobile ? '20px' : '24px',
+              maxWidth: '420px',
+              width: '100%',
+              boxShadow: '0 12px 36px rgba(0,0,0,0.28)',
+              animation: 'modalContentFadeIn 0.2s ease forwards'
+            }}
+          >
+            <h3 style={{ margin: '0 0 14px 0', color: '#111', fontSize: isMobile ? '1.1em' : '1.25em' }}>Profile Photo</h3>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '18px' }}>
+              <div style={{ width: isMobile ? '180px' : '220px', height: isMobile ? '180px' : '220px', borderRadius: '50%', overflow: 'hidden', border: `2px solid ${accentColor}`, backgroundColor: '#fff' }}>
+                {avatar ? (
+                  <img src={avatar} alt="Profile preview" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                ) : (
+                  <AvatarPlaceholder size={isMobile ? 180 : 220} iconSize={isMobile ? 70 : 86} />
+                )}
+              </div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                onClick={() => setIsProfilePhotoModalOpen(false)}
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#ffffff',
+                  color: '#111',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  setIsProfilePhotoModalOpen(false);
+                  openAvatarPicker();
+                }}
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  border: `1px solid ${accentColor}`,
+                  backgroundColor: accentColor,
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                Change Photo
               </button>
             </div>
           </div>
