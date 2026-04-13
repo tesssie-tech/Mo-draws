@@ -9,7 +9,7 @@ const HeaderDropdown = ({ title, items }) => {
       onMouseEnter={() => setIsOpen(true)}
       onMouseLeave={() => setIsOpen(false)}
     >
-      <span style={{ cursor: 'pointer', color: isOpen ? '#45FFEF' : 'white', fontWeight: 'bold', transition: 'color 0.2s', display: 'flex', alignItems: 'center' }}>
+      <span className="interactive-link" style={{ cursor: 'pointer', color: isOpen ? '#45FFEF' : 'white', fontWeight: 'bold', transition: 'color 0.2s', display: 'flex', alignItems: 'center' }}>
         {title}
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: '4px', transition: 'transform 0.2s', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
           <polyline points="6 9 12 15 18 9"></polyline>
@@ -20,6 +20,7 @@ const HeaderDropdown = ({ title, items }) => {
           <div style={{ position: 'absolute', top: '-10px', left: 0, width: '100%', height: '10px' }} />
           {items.map((item, index) => (
             <a 
+              className="interactive-link"
               key={index} 
               href={item.link} 
               style={{ display: 'block', color: 'white', textDecoration: 'none', padding: '10px 20px', fontSize: '0.9em', textAlign: 'center', transition: 'all 0.2s ease', borderBottom: index < items.length - 1 ? '1px solid #222' : 'none' }}
@@ -50,12 +51,12 @@ const FAQItem = ({ question, answer }) => {
         onClick={() => setIsOpen(!isOpen)} 
         style={{ width: '100%', padding: '15px', backgroundColor: 'transparent', color: '#FF006B', border: 'none', textAlign: 'left', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '1.1em' }}
       >
-        <span style={{ fontWeight: 'bold' }}>{question}</span>
+        <span style={{ fontWeight: 'bold', color: '#45FFEF' }}>{question}</span>
         <span style={{ color: '#FF006B', fontSize: '1.5em', lineHeight: '1' }}>{isOpen ? '-' : '+'}</span>
       </button>
       {isOpen && (
         <div style={{ padding: '15px', borderTop: '1px solid #857AFF', backgroundColor: '#111' }}>
-          <p style={{ margin: 0, color: '#45FFEF' }}>{answer}</p>
+          <p style={{ margin: 0, color: 'white' }}>{answer}</p>
         </div>
       )}
     </div>
@@ -81,6 +82,7 @@ const FooterLink = ({ href, children, category }) => {
 
   return (
     <a 
+      className="interactive-link"
       href={href} 
       onClick={handleClick}
       style={{ color: '#ccc', textDecoration: 'none', transition: 'color 0.2s' }} 
@@ -149,6 +151,109 @@ const CustomVideoPlayer = ({ src }) => {
   );
 };
 
+const ScrollRevealBlock = ({ as = 'section', id, style, children, delay = 0 }) => {
+  const containerRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const handleMotionPreference = () => setPrefersReducedMotion(mediaQuery.matches);
+
+    handleMotionPreference();
+    mediaQuery.addEventListener('change', handleMotionPreference);
+
+    return () => mediaQuery.removeEventListener('change', handleMotionPreference);
+  }, []);
+
+  useEffect(() => {
+    if (prefersReducedMotion) {
+      setIsVisible(true);
+      return undefined;
+    }
+
+    const target = containerRef.current;
+    if (!target) return undefined;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.unobserve(entry.target);
+        }
+      },
+      {
+        threshold: 0.2,
+        rootMargin: '0px 0px -8% 0px'
+      }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [prefersReducedMotion]);
+
+  const Component = as;
+  return (
+    <Component
+      id={id}
+      ref={containerRef}
+      style={{
+        ...style,
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? 'translateY(0)' : 'translateY(38px)',
+        transition: `opacity 620ms ease, transform 620ms cubic-bezier(0.22, 1, 0.36, 1)`,
+        transitionDelay: `${delay}ms`,
+        willChange: 'opacity, transform'
+      }}
+    >
+      {children}
+    </Component>
+  );
+};
+
+const LazyImage = ({ src, alt, style, ...rest }) => {
+  const imageRef = useRef(null);
+  const [shouldLoad, setShouldLoad] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('IntersectionObserver' in window)) {
+      setShouldLoad(true);
+      return undefined;
+    }
+
+    const target = imageRef.current;
+    if (!target) return undefined;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShouldLoad(true);
+          observer.unobserve(entry.target);
+        }
+      },
+      {
+        threshold: 0.01,
+        rootMargin: '160px 0px'
+      }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <img
+      ref={imageRef}
+      src={shouldLoad ? src : undefined}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      style={style}
+      {...rest}
+    />
+  );
+};
+
 const LandingPage = ({ onLoginClick, onSignUpClick }) => {
   const [isHeroHovered, setIsHeroHovered] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -199,7 +304,7 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
   }, [sliderImages.length]);
 
   return (
-    <div style={{ backgroundColor: 'black', color: 'white', minHeight: '100vh' }}>
+    <div className="landing-page" style={{ backgroundColor: 'black', color: 'white', minHeight: '100vh' }}>
       <style>
         {`
           @keyframes toastSlideIn {
@@ -213,6 +318,24 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
           @keyframes menuFadeIn {
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
+          }
+          .interactive-link,
+          .interactive-button {
+            transition: transform 0.2s ease, color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            will-change: transform;
+          }
+          .interactive-link {
+            display: inline-block;
+          }
+          .interactive-link:hover,
+          .interactive-button:hover {
+            transform: translateY(-2px);
+          }
+          .interactive-button:active {
+            transform: translateY(0) scale(0.98);
+          }
+          .landing-page p {
+            color: white;
           }
         `}
       </style>
@@ -228,6 +351,7 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
         {isMobile ? (
           <div>
             <button
+              className="interactive-button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               style={{ backgroundColor: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
@@ -249,9 +373,18 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
                     ]} 
                   />
                   <a 
+                    className="interactive-link"
                     href="#faq" 
                     onClick={() => setMobileMenuOpen(false)}
-                    style={{ color: 'white', textDecoration: 'none', fontWeight: 'bold' }}
+                    style={{ color: 'white', textDecoration: 'none', fontWeight: 'bold', padding: '4px 8px', borderRadius: '8px' }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = '#45FFEF';
+                      e.currentTarget.style.backgroundColor = 'rgba(69, 255, 239, 0.12)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = 'white';
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
                   >
                     Frequently Asked
                   </a>
@@ -265,14 +398,34 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
                   />
                   <div style={{ width: '100%', height: '1px', backgroundColor: '#333', margin: '5px 0' }} />
                   <button 
+                    className="interactive-button"
                     onClick={() => { onLoginClick(); setMobileMenuOpen(false); }}
                     style={{ width: '100%', padding: '12px', backgroundColor: 'transparent', color: 'white', border: '1px solid #45FFFF', borderRadius: '25px', cursor: 'pointer', fontWeight: 'bold' }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#45FFFF';
+                      e.currentTarget.style.color = 'black';
+                      e.currentTarget.style.boxShadow = '0 10px 22px rgba(69, 255, 255, 0.28)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = 'white';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
                   >
                     Login
                   </button>
                   <button 
+                    className="interactive-button"
                     onClick={() => { onSignUpClick(); setMobileMenuOpen(false); }}
                     style={{ width: '100%', padding: '12px', backgroundColor: '#45FFFF', color: 'black', border: 'none', borderRadius: '25px', cursor: 'pointer', fontWeight: 'bold' }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#7EFFF5';
+                      e.currentTarget.style.boxShadow = '0 10px 22px rgba(69, 255, 255, 0.35)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#45FFFF';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
                   >
                     Sign Up
                   </button>
@@ -292,10 +445,17 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
                   ]} 
                 />
                 <a 
+                  className="interactive-link"
                   href="#faq" 
                   style={{ color: 'white', textDecoration: 'none', margin: '0 15px', fontWeight: 'bold', transition: 'color 0.2s' }}
-                  onMouseEnter={(e) => e.target.style.color = '#45FFEF'}
-                  onMouseLeave={(e) => e.target.style.color = 'white'}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = '#45FFEF';
+                    e.currentTarget.style.textShadow = '0 0 12px rgba(69,255,239,0.5)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = 'white';
+                    e.currentTarget.style.textShadow = 'none';
+                  }}
                 >
                   Frequently Asked
                 </a>
@@ -310,18 +470,36 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
             </nav>
             <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
               <button 
+                className="interactive-button"
                 onClick={onLoginClick}
                 style={{ margin: '0 10px', padding: '10px 20px', backgroundColor: 'transparent', color: 'white', border: '1px solid #45FFFF', borderRadius: '25px', cursor: 'pointer', transition: 'all 0.2s ease' }}
-                onMouseEnter={(e) => { e.target.style.backgroundColor = '#45FFFF'; e.target.style.color = 'black'; }}
-                onMouseLeave={(e) => { e.target.style.backgroundColor = 'transparent'; e.target.style.color = 'white'; }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#45FFFF';
+                  e.currentTarget.style.color = 'black';
+                  e.currentTarget.style.boxShadow = '0 10px 22px rgba(69, 255, 255, 0.28)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = 'white';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
               >
                 Login
               </button>
               <button 
+                className="interactive-button"
                 onClick={onSignUpClick}
-                style={{ margin: '0 10px', padding: '10px 20px', backgroundColor: 'transparent', color: 'white', border: '1px solid #45FFFF', borderRadius: '25px', cursor: 'pointer', transition: 'all 0.2s ease' }}
-                onMouseEnter={(e) => { e.target.style.backgroundColor = '#45FFFF'; e.target.style.color = 'black'; }}
-                onMouseLeave={(e) => { e.target.style.backgroundColor = 'transparent'; e.target.style.color = 'white'; }}
+                style={{ margin: '0 10px', padding: '10px 20px', backgroundColor: '#45FFFF', color: 'black', border: '1px solid #45FFFF', borderRadius: '25px', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#7EFFF5';
+                  e.currentTarget.style.borderColor = '#7EFFF5';
+                  e.currentTarget.style.boxShadow = '0 10px 22px rgba(69, 255, 255, 0.35)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#45FFFF';
+                  e.currentTarget.style.borderColor = '#45FFFF';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
               >
                 Sign Up
               </button>
@@ -331,11 +509,12 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
       </header>
 
       {/* Hero Section */}
-      <section id="hero" style={{ textAlign: isMobile ? 'center' : 'left', padding: isMobile ? '40px 20px' : '50px', maxWidth: '800px', margin: '0 auto' }}>
+      <ScrollRevealBlock id="hero" style={{ textAlign: isMobile ? 'center' : 'left', padding: isMobile ? '40px 20px' : '50px', maxWidth: '800px', margin: '0 auto' }}>
         <h1 style={{ fontSize: isMobile ? '2.2em' : '3em', marginBottom: '20px' }}>Welcome to Mo-Draws</h1>
         <p style={{ fontSize: isMobile ? '1.1em' : '1.2em' }}>Your ultimate platform for storing and showcasing digital illustrations.</p>
         <p style={{ fontSize: isMobile ? '1.1em' : '1.2em' }}>Upload, organize, and share your artwork with ease.</p>
         <button 
+          className="interactive-button"
           onClick={onSignUpClick}
           style={{ margin: '10px 0', padding: '15px 30px', fontSize: '1.2em', border: '1px solid #45FFFF', backgroundColor: isHeroHovered ? '#45FFFF' : 'transparent', color: isHeroHovered ? 'black' : 'white', borderRadius: '25px', cursor: 'pointer', transition: 'all 0.2s ease', display: 'inline-flex', alignItems: 'center' }}
           onMouseEnter={() => setIsHeroHovered(true)}
@@ -346,10 +525,10 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
             →
           </span>
         </button>
-      </section>
+      </ScrollRevealBlock>
 
       {/* About the Creator Section */}
-      <section id="creator" style={{ padding: isMobile ? '30px 20px' : '50px', backgroundColor: 'black' }}>
+      <ScrollRevealBlock id="creator" style={{ padding: isMobile ? '30px 20px' : '50px', backgroundColor: 'black' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: isMobile ? '20px' : '40px' }}>
           <div style={{ flex: '1', minWidth: isMobile ? '100%' : '300px', textAlign: isMobile ? 'center' : 'left' }}>
             <h2 style={{ fontSize: isMobile ? '1.8em' : '2em' }}>About the Creator</h2>
@@ -358,8 +537,8 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
             </p>
           </div>
           <div style={{ flex: '1.5', minWidth: isMobile ? '100%' : '350px', display: 'flex', justifyContent: 'center' }}>
-            <div style={{ borderRadius: '10px', overflow: 'hidden', border: '2px solid #857AFF', width: isMobile ? '220px' : '320px', height: isMobile ? '220px' : '320px' }}>
-              <img
+            <div style={{ borderRadius: '10px', overflow: 'hidden', width: isMobile ? '220px' : '320px', height: isMobile ? '220px' : '320px' }}>
+              <LazyImage
                 src="img/Princess.png"
                 alt="The Creator"
                 style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
@@ -367,10 +546,10 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
             </div>
           </div>
         </div>
-      </section>
+      </ScrollRevealBlock>
 
       {/* About Sections */}
-      <section id="about" style={{ padding: isMobile ? '30px 20px' : '50px', backgroundColor: 'black' }}>
+      <ScrollRevealBlock id="about" style={{ padding: isMobile ? '30px 20px' : '50px', backgroundColor: 'black' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: isMobile ? '20px' : '40px' }}>
           <div style={{ flex: '1', minWidth: isMobile ? '100%' : '300px', textAlign: isMobile ? 'center' : 'left' }}>
             <h2 style={{ fontSize: isMobile ? '1.8em' : '2em' }}>What is Mo-Draws?</h2>
@@ -379,7 +558,7 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
           <div style={{ flex: '1.5', minWidth: isMobile ? '100%' : '350px', display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '15px' }}>
             {/* Left Column: Image Slider */}
             <div style={{ flex: '2', position: 'relative', borderRadius: '10px', overflow: 'hidden', border: '2px solid #857AFF', minHeight: isMobile ? '250px' : 'auto' }}>
-              <img 
+              <LazyImage 
                 src={sliderImages[currentSlide]} 
                 alt={`Slide ${currentSlide + 1}`} 
                 style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'opacity 0.5s ease-in-out' }} 
@@ -387,6 +566,7 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
               <div style={{ position: 'absolute', bottom: '15px', width: '100%', display: 'flex', justifyContent: 'center', gap: '10px' }}>
                 {sliderImages.map((_, index) => (
                   <button 
+                    className="interactive-button"
                     key={index} 
                     onClick={() => setCurrentSlide(index)}
                     style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: currentSlide === index ? '#FF006B' : 'rgba(255, 255, 255, 0.5)', border: 'none', cursor: 'pointer', padding: 0 }} 
@@ -403,9 +583,9 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
             </div>
           </div>
         </div>
-      </section>
+      </ScrollRevealBlock>
 
-      <section id="features" style={{ padding: isMobile ? '30px 20px' : '50px', backgroundColor: 'black', textAlign: 'center' }}>
+      <ScrollRevealBlock id="features" style={{ padding: isMobile ? '30px 20px' : '50px', backgroundColor: 'black', textAlign: 'center' }}>
         <h2 style={{ fontSize: isMobile ? '1.8em' : '2em', marginBottom: '30px' }}>Key Features</h2>
         <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: isMobile ? '20px' : '40px', flexDirection: isMobile ? 'column' : 'row', alignItems: 'center' }}>
           <div style={{ maxWidth: isMobile ? '100%' : '300px', width: isMobile ? '100%' : 'auto', border: '1px solid #857AFF', padding: '20px', borderRadius: '10px', textAlign: 'center', boxSizing: 'border-box' }}>
@@ -437,25 +617,25 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
             <p>Share your art with the community and get feedback from fellow artists.</p>
           </div>
         </div>
-      </section>
+      </ScrollRevealBlock>
 
       {/* FAQ Section */}
-      <section id="faq" style={{ padding: isMobile ? '30px 20px' : '50px', backgroundColor: 'black' }}>
+      <ScrollRevealBlock id="faq" style={{ padding: isMobile ? '30px 20px' : '50px', backgroundColor: 'black' }}>
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-          <h2 style={{ textAlign: 'center', marginBottom: '30px', color: '#45FFEF', fontSize: isMobile ? '1.8em' : '2em' }}>Frequently Asked Questions</h2>
+          <h2 style={{ textAlign: 'center', marginBottom: '30px', fontSize: isMobile ? '1.8em' : '2em' }}>Frequently Asked Questions</h2>
           <FAQItem question="Is Mo-Draws free to use?" answer="Yes! Mo-Draws offers a free basic tier for you to upload and organize your digital illustrations. We also have premium tiers with more storage and advanced features." />
           <FAQItem question="What file formats are supported?" answer="We currently support most common image formats including JPEG, PNG, GIF, and SVG." />
           <FAQItem question="Can I keep my artwork private?" answer="Absolutely. You can set individual pieces or entire collections to private, meaning only you can see them until you're ready to share." />
         </div>
-      </section>
+      </ScrollRevealBlock>
 
       {/* Footer */}
-      <footer style={{ padding: isMobile ? '30px 20px' : '50px 20px', backgroundColor: '#0a0a0a', color: 'white', borderTop: '1px solid #222' }}>
+      <ScrollRevealBlock as="footer" style={{ padding: isMobile ? '30px 20px' : '50px 20px', backgroundColor: '#0a0a0a', color: 'white', borderTop: '1px solid #222' }}>
         <div style={{ display: 'flex', justifyContent: isMobile ? 'center' : 'space-between', flexDirection: isMobile ? 'column' : 'row', flexWrap: 'wrap', gap: isMobile ? '20px' : '30px', maxWidth: '1000px', margin: '0 auto', textAlign: isMobile ? 'center' : 'left' }}>
           
           {/* 1. Logo */}
           <div style={{ flex: '1', minWidth: '150px', marginBottom: isMobile ? '10px' : '20px' }}>
-            <a href="#hero" onClick={(e) => { e.preventDefault(); document.getElementById('hero')?.scrollIntoView({ behavior: 'smooth' }); }} style={{ textDecoration: 'none' }}>
+            <a className="interactive-link" href="#hero" onClick={(e) => { e.preventDefault(); document.getElementById('hero')?.scrollIntoView({ behavior: 'smooth' }); }} style={{ textDecoration: 'none' }}>
               <h2 style={{ fontSize: '2.5em', margin: '0' }}>
                 <span style={{ color: '#FF006B' }}>Mo</span>
                 <span style={{ color: '#857AFF' }}>Draws</span>
@@ -502,6 +682,7 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
             <h4 style={{ color: '#45FFEF', marginBottom: '15px' }}>Contact Us</h4>
             <div style={{ display: 'flex', gap: '12px', justifyContent: isMobile ? 'center' : 'flex-start' }}>
               <button
+                className="interactive-button"
                 type="button"
                 aria-label="TikTok"
                 onClick={() => showToast('TikTok link coming soon.')}
@@ -535,6 +716,7 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
                 <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 448 512" height="1.1em" width="1.1em" xmlns="http://www.w3.org/2000/svg"><path d="M448 209.91a210.06 210.06 0 0 1-122.77-39.25V349.38A162.55 162.55 0 1 1 185 188.31V278.2a74.62 74.62 0 1 0 52.23 50.85V0h88a148.62 148.62 0 0 0 148.62 148.62z"></path></svg>
               </button>
               <button
+                className="interactive-button"
                 type="button"
                 aria-label="Instagram"
                 onClick={() => showToast('Instagram link coming soon.')}
@@ -568,6 +750,7 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
                 <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 448 512" height="1.1em" width="1.1em" xmlns="http://www.w3.org/2000/svg"><path d="M224.1 141c-63.6 0-114.9 51.3-114.9 114.9s51.3 114.9 114.9 114.9S339 319.5 339 255.9 287.7 141 224.1 141zm0 189.6c-41.1 0-74.7-33.5-74.7-74.7s33.5-74.7 74.7-74.7 74.7 33.5 74.7 74.7-33.6 74.7-74.7 74.7zm146.4-194.3c0 14.9-12 26.8-26.8 26.8-14.9 0-26.8-12-26.8-26.8s12-26.8 26.8-26.8 26.8 12 26.8 26.8zm76.1 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM398.8 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"></path></svg>
               </button>
               <button
+                className="interactive-button"
                 type="button"
                 aria-label="Design profile"
                 onClick={() => showToast('Profile link coming soon.')}
@@ -606,9 +789,9 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
         </div>
         
         <div style={{ textAlign: 'center', marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #222' }}>
-          <p style={{ fontSize: '0.8em', margin: 0, color: '#ccc' }}>&copy; {new Date().getFullYear()} Mo-Draws. All rights reserved.</p>
+          <p style={{ fontSize: '0.8em', margin: 0, color: 'white' }}>&copy; {new Date().getFullYear()} Mo-Draws. All rights reserved.</p>
         </div>
-      </footer>
+      </ScrollRevealBlock>
 
       {/* Toast Notification */}
       {toastMessage && (
@@ -632,6 +815,7 @@ const LandingPage = ({ onLoginClick, onSignUpClick }) => {
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#857AFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
           <span style={{ fontSize: '14px', fontWeight: 'bold', flex: 1, marginRight: '10px' }}>{toastMessage}</span>
           <button 
+            className="interactive-button"
             onClick={closeToast}
             style={{ background: 'transparent', border: 'none', color: '#aaa', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'color 0.2s ease' }}
             onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
